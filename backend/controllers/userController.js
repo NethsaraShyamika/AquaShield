@@ -122,7 +122,7 @@ export async function unblockUser(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: "User unblocked successfully", user });
+    res.json({ message: "User unblocked successfully" });
 
   } catch (error) {
     console.log(error);
