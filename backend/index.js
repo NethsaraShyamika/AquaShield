@@ -4,6 +4,7 @@ import userRouter from "./routes/userRoute.js";
 import authenticateUser from "./middlewares/authentication.js";
 import cors from "cors";
 import dotenv from "dotenv";
+import { isAdmin } from "./controllers/userController.js";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRouter);
 app.use(authenticateUser);
+app.use(isAdmin);
 
 const PORT = process.env.PORT || 5000;
 
