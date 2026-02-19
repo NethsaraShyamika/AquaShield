@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import userRouter from "./routes/userRoute.js";
+import reportRouter from "./routes/reportRoute.js";
 import authenticateUser from "./middlewares/authentication.js";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -29,7 +30,13 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "AquaShield backend is running." });
 });
 
+// ✅ Existing user routes
 app.use("/api/users", userRouter);
+
+// ✅ New report routes
+app.use("/api/reports", reportRouter);
+
+// ✅ Global middlewares (auth + admin check)
 app.use(authenticateUser);
 app.use(isAdmin);
 
@@ -39,8 +46,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
 
-
-//admin credentials
+// admin credentials
 /*{
   "email": "admin@gmail.com",
   "firstName": "Admin",
