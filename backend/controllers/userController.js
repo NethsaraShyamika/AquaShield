@@ -1,5 +1,5 @@
 import User from "../models/user.js";
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 
@@ -70,6 +70,16 @@ export async function loginUser(req,res){
 
     }
 }
+export async function getAllUsers(req, res) {
+  try {
+    const users = await User.find(); // shows EVERYTHING
+    res.json(users);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching users" });
+  }
+}
+
 
 export function isAdmin(req,res,next){
     
