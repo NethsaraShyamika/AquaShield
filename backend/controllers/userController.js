@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { sendWelcomeEmail } from "../utils/sendEmail.js";
 
 export async function createUser(req, res) {
   const data = req.body;
@@ -15,9 +16,22 @@ export async function createUser(req, res) {
     });
 
     await newUser.save();
+
+    // ✅ Separate try/catch for email so it doesn't break user creation
+    try {
+      await sendWelcomeEmail(data.email, data.firstName);
+    } catch (emailError) {
+      console.log("Email sending failed:", emailError.message);
+      // don't return error, user is already created
+    }
+
     res.json({ message: "User created successfully" });
 
   } catch (error) {
+    console.log(error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
     res.status(403).json({ message: "Error creating user" });
   }
 }
@@ -54,10 +68,29 @@ export async function loginUser(req, res) {
     const token = jwt.sign(payload, "icomputers", { expiresIn: "48h" });
     console.log(token);
 
+    // ✅ Save user to session
+    req.session.user = payload;
+    req.session.save((err) => {
+      if (err) console.log("Session save error:", err);
+    });
+
     return res.json({ message: "Login successful", token: token });
 
   } catch (error) {
     res.status(500).json({ message: "Error logging in user" });
+  }
+}
+
+export async function logoutUser(req, res) {
+  try {
+    req.session.destroy((error) => {
+      if (error) {
+        return res.status(500).json({ message: "Error logging out" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error logging out" });
   }
 }
 

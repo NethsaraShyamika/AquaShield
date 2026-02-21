@@ -1,15 +1,26 @@
 import express from "express"
-import { createUser, loginUser , getAllUsers, blockUser , unblockUser , updateMyProfile , deleteOwnAccount} from "../controllers/userController.js"
+import { createUser, loginUser, getAllUsers, blockUser, unblockUser, updateMyProfile, deleteOwnAccount, logoutUser } from "../controllers/userController.js"
 import authenticateUser from "../middlewares/authentication.js";
 import { isAdmin } from "../controllers/userController.js";
 
 const userRouter = express.Router();
 
-userRouter.post("/" ,createUser)
-userRouter.get("/" ,getAllUsers)
+userRouter.post("/", createUser)
+userRouter.get("/", getAllUsers)
 userRouter.put("/block/:id", authenticateUser, isAdmin, blockUser);
 userRouter.put("/unblock/:id", authenticateUser, isAdmin, unblockUser);
-userRouter.post("/login" ,loginUser)
+userRouter.post("/login", loginUser)
+userRouter.post("/logout", authenticateUser, logoutUser)
+userRouter.get("/session-test", (req, res) => {
+    if (req.session && req.session.user) {
+        res.json({
+            message: "Session is active",
+            user: req.session.user
+        });
+    } else {
+        res.json({ message: "No session found" });
+    }
+});
 userRouter.put("/me", authenticateUser, updateMyProfile); // ✅ user only
 userRouter.delete("/me", authenticateUser, deleteOwnAccount); // ✅ user only
 
