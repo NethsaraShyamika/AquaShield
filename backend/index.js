@@ -2,15 +2,26 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import authenticateUser from "./middlewares/authentication.js";
 import userRouter from "./routes/userRoute.js";
 import speciesRoutes from "./routes/speciesRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
-import { isAdmin } from "./controllers/userController.js";
+import session from "express-session";
 
 dotenv.config();
 
 const app = express();
+
+// Session configuration
+app.use(session({
+  secret: "aquashield_secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // set true in production with HTTPS
+    maxAge: 1000 * 60 * 60 * 48 // 48 hours
+  }
+}));
+
 function go(){
   console.log("Started...");
 }
@@ -20,8 +31,6 @@ app.use(express.json());
 app.use("/api/species", speciesRoutes);
 
 app.use("/api/users", userRouter);
-//app.use(authenticateUser);
-//app.use(isAdmin);
 
 app.use("/uploads", express.static("uploads"));        // serve evidence files
 app.use("/api/reports", reportRoutes);
@@ -48,6 +57,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
+
 
 
 //admin credentials
