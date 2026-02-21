@@ -71,6 +71,70 @@ export async function getAllUsers(req, res) {
   }
 }
 
+
+export async function updateMyProfile(req, res) {
+  try {
+    const userId = req.user.id; // ✅ Logged-in user ID from JWT
+
+    const { email, firstName, lastName, password, image } = req.body;
+
+    const updateData = {};
+
+    if (email) updateData.email = email;
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (image) updateData.image = image;
+
+    // ✅ If user changes password
+    if (password) {
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      updateData.password = hashedPassword;
+    }
+
+    // ❌ Block users from hacking admin fields
+    if (req.body.isAdmin || req.body.isBlocked) {
+      return res.status(403).json({
+        message: "You cannot change system fields"
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    ).select("-password"); // hide password
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error updating profile" });
+  }
+}
+
+export async function deleteOwnAccount(req, res) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = await User.findByIdAndDelete(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Account deleted successfully" });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error deleting account" });
+  }
+}
+
 export async function blockUser(req, res) {
   try {
     const userId = req.params.id;

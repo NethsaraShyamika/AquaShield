@@ -32,8 +32,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/users", userRouter);
-app.use(authenticateUser);
-app.use(isAdmin);
+//app.use(authenticateUser);
+//app.use(isAdmin);
 
 const PORT = process.env.PORT || 5000;
 
