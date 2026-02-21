@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import userRouter from "./routes/userRoute.js";
 import speciesRoutes from "./routes/speciesRoutes.js";
+import caseRoutes from "./routes/caseRoutes.js";
+import { isAdmin } from "./controllers/userController.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import session from "express-session";
 
@@ -29,6 +31,7 @@ function go(){
 app.use(cors());
 app.use(express.json());
 app.use("/api/species", speciesRoutes);
+app.use("/api/cases", caseRoutes);
 
 app.use("/api/users", userRouter);
 
