@@ -1,10 +1,11 @@
 import express from "express";
 import mongoose from "mongoose";
-import userRouter from "./routes/userRoute.js";
-import authenticateUser from "./middlewares/authentication.js";
 import cors from "cors";
 import dotenv from "dotenv";
+import authenticateUser from "./middlewares/authentication.js";
+import userRouter from "./routes/userRoute.js";
 import speciesRoutes from "./routes/speciesRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 import { isAdmin } from "./controllers/userController.js";
 
 dotenv.config();
@@ -17,6 +18,14 @@ function go(){
 app.use(cors());
 app.use(express.json());
 app.use("/api/species", speciesRoutes);
+
+app.use("/api/users", userRouter);
+//app.use(authenticateUser);
+//app.use(isAdmin);
+
+app.use("/uploads", express.static("uploads"));        // serve evidence files
+app.use("/api/reports", reportRoutes);
+
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -31,9 +40,7 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "AquaShield backend is running." });
 });
 
-app.use("/api/users", userRouter);
-//app.use(authenticateUser);
-//app.use(isAdmin);
+
 
 
 const PORT = process.env.PORT || 5000;
