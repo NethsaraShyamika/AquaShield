@@ -25,22 +25,5 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1"
-  },
-  "name": "aquashield",
-  "version": "1.0.0",
-  "description": "AquaShield is a group academic project designed to monitor illegal fishing activities, manage protected marine species, and streamline case handling using modern web technologies.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/NethsaraShyamika/AquaShield.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/NethsaraShyamika/AquaShield/issues"
-  },
-  "homepage": "https://github.com/NethsaraShyamika/AquaShield#readme"
+  }
 }
