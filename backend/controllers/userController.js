@@ -68,10 +68,29 @@ export async function loginUser(req, res) {
     const token = jwt.sign(payload, "icomputers", { expiresIn: "48h" });
     console.log(token);
 
+    // ✅ Save user to session
+    req.session.user = payload;
+    req.session.save((err) => {
+      if (err) console.log("Session save error:", err);
+    });
+
     return res.json({ message: "Login successful", token: token });
 
   } catch (error) {
     res.status(500).json({ message: "Error logging in user" });
+  }
+}
+
+export async function logoutUser(req, res) {
+  try {
+    req.session.destroy((error) => {
+      if (error) {
+        return res.status(500).json({ message: "Error logging out" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error logging out" });
   }
 }
 
