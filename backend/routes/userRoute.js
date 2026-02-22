@@ -1,5 +1,16 @@
 import express from "express"
-import { createUser, loginUser, getAllUsers, blockUser, unblockUser, updateMyProfile, deleteOwnAccount, logoutUser } from "../controllers/userController.js"
+import {
+    createUser,
+    loginUser,
+    getAllUsers,
+    blockUser,
+    unblockUser,
+    updateMyProfile,
+    deleteOwnAccount,
+    logoutUser,
+    forgotPassword,
+    resetPassword
+} from "../controllers/userController.js"
 import authenticateUser from "../middlewares/authentication.js";
 import { isAdmin } from "../controllers/userController.js";
 
@@ -11,6 +22,8 @@ userRouter.put("/block/:id", authenticateUser, isAdmin, blockUser);
 userRouter.put("/unblock/:id", authenticateUser, isAdmin, unblockUser);
 userRouter.post("/login", loginUser)
 userRouter.post("/logout", authenticateUser, logoutUser)
+userRouter.post("/forgot-password", forgotPassword)
+userRouter.post("/reset-password", resetPassword)
 userRouter.get("/session-test", (req, res) => {
     if (req.session && req.session.user) {
         res.json({

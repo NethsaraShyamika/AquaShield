@@ -96,3 +96,90 @@ export async function sendWelcomeEmail(toEmail, firstName) {
 
   await transporter.sendMail(mailOptions);
 }
+
+export async function sendOtpEmail(toEmail, firstName, otp) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: toEmail,
+    subject: "🔐 AquaShield - Your Password Reset OTP",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background-color: #f0f8ff; padding: 30px; border-radius: 16px;">
+        
+        <div style="background: linear-gradient(135deg, #0077b6, #00b4d8); padding: 30px; border-radius: 10px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">🌊 AquaShield</h1>
+          <p style="color: #caf0f8;">Password Reset Request</p>
+        </div>
+
+        <div style="padding: 30px 20px;">
+          <h2 style="color: #0077b6;">Hi ${firstName},</h2>
+          <p style="color: #444;">We received a request to reset your password. Use the OTP below to proceed:</p>
+
+          <div style="background-color: #0077b6; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #ffffff; font-size: 42px; letter-spacing: 10px; margin: 0;">${otp}</h1>
+          </div>
+
+          <p style="color: #444;">This OTP is valid for <b>10 minutes</b>.</p>
+          <p style="color: #444;">If you did not request a password reset, please ignore this email.</p>
+        </div>
+
+        <div style="text-align: center; padding: 10px; border-top: 1px solid #ccc;">
+          <p style="color: #999; font-size: 12px;">© 2026 AquaShield. All rights reserved.</p>
+        </div>
+
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+export async function sendPasswordResetSuccessEmail(toEmail, firstName) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: toEmail,
+    subject: "🔐 AquaShield - Password Reset Successful",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background-color: #f0f8ff; padding: 30px; border-radius: 16px;">
+        
+        <div style="background: linear-gradient(135deg, #0077b6, #00b4d8); padding: 30px; border-radius: 10px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">🌊 AquaShield</h1>
+          <p style="color: #caf0f8;">Password Reset Successful</p>
+        </div>
+
+        <div style="padding: 30px 20px;">
+          <h2 style="color: #0077b6;">Hi ${firstName},</h2>
+          <p style="color: #444;">Your password has been successfully reset. You can now login with your new password.</p>
+
+          <div style="background-color: #0077b6; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+            <p style="color: #ffffff; font-size: 18px; margin: 0;">✅ Password Reset Successful</p>
+          </div>
+
+          <p style="color: #444;">If you did not reset your password, please contact us immediately as your account may be compromised.</p>
+        </div>
+
+        <div style="text-align: center; padding: 10px; border-top: 1px solid #ccc;">
+          <p style="color: #999; font-size: 12px;">© 2026 AquaShield. All rights reserved.</p>
+        </div>
+
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
