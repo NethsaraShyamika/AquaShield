@@ -10,8 +10,7 @@ import {
     logoutUser,
     forgotPassword,
     resetPassword,
-    searchUser
-    resetPassword
+    searchUser,
 } from "../controllers/userController.js"
 import authenticateUser from "../middlewares/authentication.js";
 import { isAdmin } from "../controllers/userController.js";
