@@ -13,19 +13,20 @@ import {
     searchUser,
 } from "../controllers/userController.js"
 import authenticateUser from "../middlewares/authentication.js";
+import { createUserValidation, loginValidation, forgotPasswordValidation, resetPasswordValidation, updateProfileValidation, validate } from "../middlewares/userValidation.js";
 import { isAdmin } from "../controllers/userController.js";
 
 const userRouter = express.Router();
 
-userRouter.post("/", createUser)
+userRouter.post("/", createUserValidation, validate, createUser)
 userRouter.get("/", authenticateUser, isAdmin, getAllUsers) 
 userRouter.put("/block/:id", authenticateUser, isAdmin, blockUser);
 userRouter.put("/unblock/:id", authenticateUser, isAdmin, unblockUser);
-userRouter.post("/login", loginUser)
+userRouter.post("/login", loginValidation, validate, loginUser)
 userRouter.post("/logout", authenticateUser, logoutUser)
-userRouter.post("/forgot-password", forgotPassword)
-userRouter.post("/reset-password", resetPassword)
-userRouter.get("/search", authenticateUser,isAdmin, searchUser);
+userRouter.post("/forgot-password", forgotPasswordValidation, validate, forgotPassword)
+userRouter.post("/reset-password", resetPasswordValidation, validate, resetPassword)
+userRouter.get("/search", authenticateUser, isAdmin, searchUser);
 userRouter.get("/session-test", (req, res) => {
     if (req.session && req.session.user) {
         res.json({
@@ -36,9 +37,7 @@ userRouter.get("/session-test", (req, res) => {
         res.json({ message: "No session found" });
     }
 });
-userRouter.put("/me", authenticateUser, updateMyProfile); // ✅ user only
-userRouter.delete("/me", authenticateUser, deleteOwnAccount); // ✅ user only
+userRouter.put("/me", authenticateUser, updateProfileValidation, validate, updateMyProfile);
+userRouter.delete("/me", authenticateUser, deleteOwnAccount);
 
 export default userRouter;
-
-//made a changed
