@@ -96,14 +96,13 @@ export async function logoutUser(req, res) {
 
 export async function getAllUsers(req, res) {
   try {
-    const users = await User.find();
+    const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error fetching users" });
   }
 }
-
 
 export async function updateMyProfile(req, res) {
   try {
@@ -160,11 +159,115 @@ export async function deleteOwnAccount(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // ✅ Destroy session after deleting account
+    req.session.destroy((error) => {
+      if (error) {
+        console.log("Session destroy error:", error);
+      }
+    });
+
     res.json({ message: "Account deleted successfully" });
 
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error deleting account" });
+  }
+}
+// ✅ Step 1 - Send OTP to email
+export async function forgotPassword(req, res) {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save OTP to database
+    user.resetOtp = otp;
+    user.resetOtpExpiry = expiry;
+    await user.save();
+
+    // Send OTP email
+    await sendOtpEmail(user.email, user.firstName, otp);
+
+    res.json({ message: "OTP sent to your email" });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error sending OTP" });
+  }
+}
+
+export async function searchUser(req, res) {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({ message: "Please provide a search query" });
+    }
+
+    const users = await User.find({
+      $or: [
+        { uid: { $regex: `^${query}`, $options: "i" } },
+        { email: { $regex: `^${query}`, $options: "i" } },
+        { firstName: { $regex: `^${query}`, $options: "i" } },
+        { lastName: { $regex: `^${query}`, $options: "i" } },
+      ]
+    }).select("-password");
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    res.json(users);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error searching user" });
+  }
+}
+
+// ✅ Step 2 - Verify OTP and reset password
+export async function resetPassword(req, res) {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check OTP is correct
+    if (user.resetOtp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // Check OTP is not expired
+    if (user.resetOtpExpiry < new Date()) {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    // Hash new password
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+    // Update password and clear OTP
+    user.password = hashedPassword;
+    user.resetOtp = null;
+    user.resetOtpExpiry = null;
+    await user.save();
+
+    await sendPasswordResetSuccessEmail(user.email, user.firstName);
+
+    res.json({ message: "Password reset successfully" });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error resetting password" });
   }
 }
 
@@ -239,10 +342,8 @@ export async function resetPassword(req, res) {
 
 export async function blockUser(req, res) {
   try {
-    const userId = req.params.id;
-
-    const user = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findOneAndUpdate(
+      { uid: req.params.id },
       { isBlocked: true },
       { new: true }
     );
@@ -259,12 +360,12 @@ export async function blockUser(req, res) {
   }
 }
 
+
+
 export async function unblockUser(req, res) {
   try {
-    const userId = req.params.id;
-
-    const user = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findOneAndUpdate(
+      { uid: req.params.id },
       { isBlocked: false },
       { new: true }
     );
