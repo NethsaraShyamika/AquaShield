@@ -35,9 +35,7 @@ app.use("/api/cases", caseRoutes);
 
 app.use("/api/users", userRouter);
 
-app.use("/uploads", express.static("uploads"));        // serve evidence files
 app.use("/api/reports", reportRoutes);
-
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -52,23 +50,8 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "AquaShield backend is running." });
 });
 
-
-
-
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
-
-
-
-//admin credentials
-/*{
-  "email": "admin@gmail.com",
-  "firstName": "Admin",
-  "lastName": "User",
-  "password": "admin123",
-  "isAdmin": true
-}
-*/

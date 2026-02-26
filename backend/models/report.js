@@ -7,8 +7,6 @@ const reportSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    // Incident details
     incidentType: {
       type: String,
       required: [true, "Incident type is required"],
@@ -28,8 +26,6 @@ const reportSchema = new mongoose.Schema(
       minlength: [20, "Description must be at least 20 characters"],
       maxlength: [2000, "Description cannot exceed 2000 characters"],
     },
-
-    // Location — auto-captured or manually pinned on map
     location: {
       type: {
         type: String,
@@ -37,39 +33,27 @@ const reportSchema = new mongoose.Schema(
         default: "Point",
       },
       coordinates: {
-        type: [Number], // [longitude, latitude]
+        type: [Number],
         required: [true, "Location coordinates are required"],
       },
-      placeName: {
-        type: String, // Human-readable label (optional, from reverse geocode)
-        default: "",
-      },
     },
-
-    // Timestamp is auto-captured via createdAt (timestamps: true)
     incidentDate: {
       type: Date,
-      default: Date.now, // fallback if frontend doesn't send
+      default: Date.now,
     },
-
-    // Evidence uploads (file paths / URLs from cloud/local storage)
     evidence: [
       {
         url: { type: String, required: true },
-        fileType: { type: String }, // "image/jpeg", "video/mp4", etc.
+        fileType: { type: String },
         originalName: { type: String },
       },
     ],
-
-    // Species involved (optional — links to your species DB)
     speciesInvolved: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Species",
       },
     ],
-
-    // Admin-managed status
     status: {
       type: String,
       enum: ["Pending", "Under Review", "Verified", "Dismissed", "Resolved"],
@@ -81,12 +65,10 @@ const reportSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
 
-// Enable geospatial queries
 reportSchema.index({ location: "2dsphere" });
 
-const Report = mongoose.model("Report", reportSchema);
-export default Report;
+export default mongoose.models.Report || mongoose.model("Report", reportSchema);
