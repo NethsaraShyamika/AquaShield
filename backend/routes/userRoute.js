@@ -11,6 +11,7 @@ import {
     forgotPassword,
     resetPassword,
     searchUser
+    resetPassword
 } from "../controllers/userController.js"
 import authenticateUser from "../middlewares/authentication.js";
 import { isAdmin } from "../controllers/userController.js";
