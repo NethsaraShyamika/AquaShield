@@ -1,4 +1,4 @@
-import Report from "../models/Report.js";
+import Report from "../models/report.js";
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
