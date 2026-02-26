@@ -15,14 +15,12 @@ import upload from "../middlewares/upload.js";
 
 const router = express.Router();
 
-// ── User routes (authenticated) ──────────────────────────────────────────────
 router.post("/", authenticateUser, upload.array("evidence", 5), createReport);
 router.get("/my", authenticateUser, getMyReports);
 router.get("/my/:id", authenticateUser, getMyReportById);
 router.put("/my/:id", authenticateUser, upload.array("evidence", 5), updateMyReport);
 router.delete("/my/:id", authenticateUser, deleteMyReport);
 
-// ── Admin routes ─────────────────────────────────────────────────────────────
 router.get("/", authenticateUser, isAdmin, getAllReports);
 router.get("/:id", authenticateUser, isAdmin, getReportById);
 router.patch("/:id/status", authenticateUser, isAdmin, updateReportStatus);

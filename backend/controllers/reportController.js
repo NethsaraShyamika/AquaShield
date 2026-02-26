@@ -1,10 +1,7 @@
 import Report from "../models/Report.js";
 
-// helper → get user id safely from middleware
 const getUserId = (req) => req.user?._id || req.user?.id;
 
-
-// ─── USER: Create a report ────────────────────────────────────────────────────
 export const createReport = async (req, res) => {
   try {
     const {
@@ -12,7 +9,6 @@ export const createReport = async (req, res) => {
       description,
       latitude,
       longitude,
-      placeName,
       incidentDate,
       speciesInvolved,
     } = req.body;
@@ -25,20 +21,19 @@ export const createReport = async (req, res) => {
 
     const evidence = req.files
       ? req.files.map((file) => ({
-          url: `${req.protocol}://${req.get("host")}/${file.path.replace(/\\/g, "/")}`,
+          url: file.path,
           fileType: file.mimetype,
           originalName: file.originalname,
         }))
       : [];
 
     const report = await Report.create({
-      reportedBy: getUserId(req), // ✅ SAFE FIX
+      reportedBy: getUserId(req),
       incidentType,
       description,
       location: {
         type: "Point",
         coordinates: [parseFloat(longitude), parseFloat(latitude)],
-        placeName: placeName || "",
       },
       incidentDate: incidentDate || Date.now(),
       evidence,
@@ -52,7 +47,6 @@ export const createReport = async (req, res) => {
       message: "Report submitted successfully.",
       report,
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to submit report.",
@@ -61,13 +55,9 @@ export const createReport = async (req, res) => {
   }
 };
 
-
-// ─── USER: Get own reports ────────────────────────────────────────────────────
 export const getMyReports = async (req, res) => {
   try {
-    const reports = await Report.find({
-      reportedBy: getUserId(req),
-    })
+    const reports = await Report.find({ reportedBy: getUserId(req) })
       .populate("speciesInvolved", "name commonName")
       .sort({ createdAt: -1 });
 
@@ -75,7 +65,6 @@ export const getMyReports = async (req, res) => {
       count: reports.length,
       reports,
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch reports.",
@@ -84,25 +73,18 @@ export const getMyReports = async (req, res) => {
   }
 };
 
-
-// ─── USER: Get single own report ─────────────────────────────────────────────
 export const getMyReportById = async (req, res) => {
   try {
-
     const report = await Report.findOne({
-      _id: req.params.id, // ✅ FIXED (_id not id)
+      _id: req.params.id,
       reportedBy: getUserId(req),
-    })
-      .populate("speciesInvolved", "name commonName");
+    }).populate("speciesInvolved", "name commonName");
 
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found.",
-      });
+      return res.status(404).json({ message: "Report not found." });
     }
 
     res.status(200).json(report);
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch report.",
@@ -111,20 +93,15 @@ export const getMyReportById = async (req, res) => {
   }
 };
 
-
-// ─── USER: Update own report ─────────────────────────────────────────────────
 export const updateMyReport = async (req, res) => {
   try {
-
     const report = await Report.findOne({
       _id: req.params.id,
-      reportedBy: getUserId(req), // ✅ FIXED
+      reportedBy: getUserId(req),
     });
 
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found.",
-      });
+      return res.status(404).json({ message: "Report not found." });
     }
 
     if (report.status !== "Pending") {
@@ -138,7 +115,6 @@ export const updateMyReport = async (req, res) => {
       description,
       latitude,
       longitude,
-      placeName,
       incidentDate,
       speciesInvolved,
     } = req.body;
@@ -150,7 +126,6 @@ export const updateMyReport = async (req, res) => {
       report.location = {
         type: "Point",
         coordinates: [parseFloat(longitude), parseFloat(latitude)],
-        placeName: placeName || report.location.placeName,
       };
     }
 
@@ -165,11 +140,10 @@ export const updateMyReport = async (req, res) => {
 
     if (req.files?.length > 0) {
       const newEvidence = req.files.map((file) => ({
-        url: `${req.protocol}://${req.get("host")}/${file.path.replace(/\\/g, "/")}`,
+        url: file.path,
         fileType: file.mimetype,
         originalName: file.originalname,
       }));
-
       report.evidence.push(...newEvidence);
     }
 
@@ -179,7 +153,6 @@ export const updateMyReport = async (req, res) => {
       message: "Report updated successfully.",
       report,
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to update report.",
@@ -188,20 +161,15 @@ export const updateMyReport = async (req, res) => {
   }
 };
 
-
-// ─── USER: Delete own report ─────────────────────────────────────────────────
 export const deleteMyReport = async (req, res) => {
   try {
-
     const report = await Report.findOne({
       _id: req.params.id,
-      reportedBy: getUserId(req), // ✅ FIXED
+      reportedBy: getUserId(req),
     });
 
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found.",
-      });
+      return res.status(404).json({ message: "Report not found." });
     }
 
     if (report.status !== "Pending") {
@@ -212,10 +180,7 @@ export const deleteMyReport = async (req, res) => {
 
     await report.deleteOne();
 
-    res.status(200).json({
-      message: "Report deleted successfully.",
-    });
-
+    res.status(200).json({ message: "Report deleted successfully." });
   } catch (error) {
     res.status(500).json({
       message: "Failed to delete report.",
@@ -224,11 +189,8 @@ export const deleteMyReport = async (req, res) => {
   }
 };
 
-
-// ─── ADMIN: Get all reports ───────────────────────────────────────────────────
 export const getAllReports = async (req, res) => {
   try {
-
     const { status, page = 1, limit = 10 } = req.query;
 
     const filter = {};
@@ -249,7 +211,6 @@ export const getAllReports = async (req, res) => {
       pages: Math.ceil(total / limit),
       reports,
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch reports.",
@@ -258,23 +219,17 @@ export const getAllReports = async (req, res) => {
   }
 };
 
-
-// ─── ADMIN: Get single report ─────────────────────────────────────────────────
 export const getReportById = async (req, res) => {
   try {
-
     const report = await Report.findById(req.params.id)
       .populate("reportedBy", "firstName lastName email")
       .populate("speciesInvolved", "name commonName");
 
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found.",
-      });
+      return res.status(404).json({ message: "Report not found." });
     }
 
     res.status(200).json(report);
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch report.",
@@ -283,11 +238,8 @@ export const getReportById = async (req, res) => {
   }
 };
 
-
-// ─── ADMIN: Update report status ──────────────────────────────────────────────
 export const updateReportStatus = async (req, res) => {
   try {
-
     const { status, adminNote } = req.body;
 
     const validStatuses = [
@@ -299,31 +251,23 @@ export const updateReportStatus = async (req, res) => {
     ];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: "Invalid status value.",
-      });
+      return res.status(400).json({ message: "Invalid status value." });
     }
 
     const report = await Report.findByIdAndUpdate(
       req.params.id,
-      {
-        status,
-        adminNote: adminNote || "",
-      },
+      { status, adminNote: adminNote || "" },
       { new: true }
     );
 
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found.",
-      });
+      return res.status(404).json({ message: "Report not found." });
     }
 
     res.status(200).json({
       message: "Report status updated.",
       report,
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Failed to update status.",
