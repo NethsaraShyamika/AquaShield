@@ -45,8 +45,15 @@ const caseSchema = new mongoose.Schema({
 
   evidence: [String],
 
-  notes: String
+  notes: String,
+
+  locationName: {
+  type: String
+},
+
+
+  
 
 }, { timestamps: true });
 
-export default mongoose.model("Case", caseSchema);
+export default mongoose.models.Case || mongoose.model("Case", caseSchema);

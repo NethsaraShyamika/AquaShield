@@ -1,11 +1,11 @@
-// controllers/caseController.js
 
 import Case from "../models/case.js";
+import Report from "../models/report.js";
+import { getLocationName } from "../utils/geocodeService.js";
 
 
-// ===============================
-// 🔵 CREATE CASE (ADMIN ONLY)
-// ===============================
+// CREATE CASE (ADMIN ONLY)
+
 export const createCase = async (req, res) => {
 
   if (!req.user || !req.user.isAdmin) {
@@ -13,7 +13,27 @@ export const createCase = async (req, res) => {
   }
 
   try {
-    const newCase = new Case(req.body);
+
+    //  Find report using reportId
+    const report = await Report.findById(req.body.reportId);
+
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    // Get latitude & longitude from report
+    const longitude = report.location.coordinates[0];
+    const latitude = report.location.coordinates[1];
+
+    // Convert coordinates → readable address
+    const locationName = await getLocationName(latitude, longitude);
+
+    // Create case with locationName
+    const newCase = new Case({
+      ...req.body,
+      locationName
+    });
+
     await newCase.save();
 
     res.status(201).json(newCase);
@@ -25,9 +45,8 @@ export const createCase = async (req, res) => {
 
 
 
-// ===============================
-// 🟢 GET ALL CASES (ADMIN ONLY)
-// ===============================
+//  GET ALL CASES (ADMIN ONLY)
+
 export const getAllCases = async (req, res) => {
 
   if (!req.user || !req.user.isAdmin) {
@@ -45,11 +64,10 @@ export const getAllCases = async (req, res) => {
 
 
 
-// ===============================
-// 🟡 GET CASE BY ID
-// ✅ Admin → Can View All
-// ✅ User → Can View Only Their Report Case
-// ===============================
+
+//  Admin → Can View All
+// User → Can View Only Their Report Case
+
 export const getCaseById = async (req, res) => {
 
   if (!req.user) {
@@ -65,12 +83,12 @@ export const getCaseById = async (req, res) => {
       return res.status(404).json({ message: "Case not found" });
     }
 
-    // ✅ Admin can access
+    //  Admin can access
     if (req.user.isAdmin) {
       return res.json(caseData);
     }
 
-    // ✅ Normal User — Check Report Ownership
+    // Normal User — Check Report Ownership
     if (
       caseData.reportId.userId &&
       caseData.reportId.userId.toString() !== req.user._id
@@ -88,10 +106,8 @@ export const getCaseById = async (req, res) => {
 };
 
 
+// UPDATE CASE 
 
-// ===============================
-// 🔴 UPDATE CASE (ADMIN ONLY)
-// ===============================
 export const updateCase = async (req, res) => {
 
   if (!req.user || !req.user.isAdmin) {
@@ -118,10 +134,8 @@ export const updateCase = async (req, res) => {
 };
 
 
+//  DELETE CASE
 
-// ===============================
-// ❌ DELETE CASE (ADMIN ONLY)
-// ===============================
 export const deleteCase = async (req, res) => {
 
   if (!req.user || !req.user.isAdmin) {
