@@ -1,4 +1,5 @@
 import species from "../models/species.js";
+import { searchGBIF, getGBIFSpeciesDetail, getGBIFMedia, getGBIFOccurrences } from "../utils/gbifService.js";
 
 export async function createSpecies(req, res) {
     if (req.user == null) {
@@ -120,8 +121,6 @@ export async function findSpecies(req, res) {
             filter.colorPattern = { $in: colorPatterns };
         }
 
-        console.log('Filter being applied:', filter);
-
         const results = await species.find(filter);
 
         if (results.length === 0) {
@@ -139,10 +138,122 @@ export async function findSpecies(req, res) {
         });
 
     } catch (error) {
-        console.error('Error in findSpecies:', error);
         res.status(500).json({ 
             message: "Error searching for species",
             error: error.message 
         });
+    }
+}
+
+// ─── GBIF FUNCTIONS ─────────────────────────────────────────────────────────
+
+export async function searchGBIFSpecies(req, res) {
+    try {
+        const { q } = req.query;
+        if (!q) return res.status(400).json({ message: "Query param 'q' is required" });
+
+        const data = await searchGBIF(q);
+
+        const results = data.results.map((s) => ({
+            gbifKey: s.key,
+            scientificName: s.scientificName,
+            canonicalName: s.canonicalName,
+            family: s.family,
+            order: s.order,
+            class: s.class,
+            kingdom: s.kingdom,
+            status: s.taxonomicStatus,
+            rank: s.rank,
+        }));
+
+        res.status(200).json({ count: results.length, results });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+export async function getGBIFEnrichedData(req, res) {
+    try {
+        const { gbifKey } = req.params;
+
+        const [detail, media, occurrences] = await Promise.all([
+            getGBIFSpeciesDetail(gbifKey),
+            getGBIFMedia(gbifKey),
+            getGBIFOccurrences(gbifKey),
+        ]);
+
+        const images = occurrences.results
+            .flatMap((o) => o.media || [])
+            .filter((m) => m.type === "StillImage" && m.identifier)
+            .map((m) => m.identifier)
+            .slice(0, 8);
+
+        res.status(200).json({
+            gbifKey: detail.key,
+            scientificName: detail.scientificName,
+            canonicalName: detail.canonicalName,
+            taxonomy: {
+                kingdom: detail.kingdom,
+                phylum: detail.phylum,
+                class: detail.class,
+                order: detail.order,
+                family: detail.family,
+                genus: detail.genus,
+            },
+            vernacularNames: detail.vernacularName || null,
+            extinct: detail.extinct || false,
+            media: media.results?.slice(0, 5) || [],
+            images,
+            occurrenceCount: occurrences.count,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+export async function getEnrichedSpeciesById(req, res) {
+    try {
+        const localSpecies = await species.findOne({ id: req.params.id });
+        if (!localSpecies) return res.status(404).json({ message: "Species not found" });
+
+        const gbifSearch = await searchGBIF(localSpecies.scientificName);
+        if (!gbifSearch.results?.length) {
+            return res.status(200).json({ ...localSpecies.toObject(), gbif: null });
+        }
+
+        const topMatch = gbifSearch.results[0];
+
+        const [detail, media, occurrences] = await Promise.all([
+            getGBIFSpeciesDetail(topMatch.key),
+            getGBIFMedia(topMatch.key),
+            getGBIFOccurrences(topMatch.key),
+        ]);
+
+        const gbifImages = occurrences.results
+            .flatMap((o) => o.media || [])
+            .filter((m) => m.type === "StillImage" && m.identifier)
+            .map((m) => m.identifier)
+            .slice(0, 8);
+
+        res.status(200).json({
+            ...localSpecies.toObject(),
+            gbif: {
+                key: topMatch.key,
+                taxonomy: {
+                    kingdom: detail.kingdom,
+                    phylum: detail.phylum,
+                    class: detail.class,
+                    order: detail.order,
+                    family: detail.family,
+                    genus: detail.genus,
+                },
+                extinct: detail.extinct || false,
+                images: gbifImages,
+                media: media.results?.slice(0, 5) || [],
+                occurrenceCount: occurrences.count,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 }
