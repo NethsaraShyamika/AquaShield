@@ -31,18 +31,11 @@ function App() {
     </Router>
   );
 import { useCallback, useEffect, useMemo, useState } from "react";
+import UserDashboard from "./pages/UserDashboard";
 import "./App.css";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
-const STATUS_STYLES = {
-  Pending: "chip chip-amber",
-  "Under Review": "chip chip-blue",
-  Verified: "chip chip-green",
-  Dismissed: "chip chip-gray",
-  Resolved: "chip chip-emerald",
-};
 
 const BODY_SHAPES = ["torpedo", "oval", "flat", "eel-like", "box-like"];
 const TAIL_SHAPES = ["crescent", "forked", "rounded", "square", "pointed"];
@@ -55,14 +48,6 @@ const INCIDENT_TYPES = [
   "Night Fishing Violation",
   "Other",
 ];
-
-const statusStageMap = {
-  Pending: 1,
-  "Under Review": 2,
-  Verified: 3,
-  Resolved: 4,
-  Dismissed: 4,
-};
 
 function tokenFromStorage() {
   const keys = ["token", "authToken", "accessToken", "jwt"];
@@ -124,17 +109,8 @@ function toTitleCase(value) {
     .join(" ");
 }
 
-function formatDate(value) {
-  if (!value) return "Unknown date";
-  const date = new Date(value);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function App() {
+  const [activeView, setActiveView] = useState("dashboard");
   const [reports, setReports] = useState([]);
   const [speciesCatalog, setSpeciesCatalog] = useState([]);
   const [identifierResult, setIdentifierResult] = useState([]);
@@ -160,6 +136,8 @@ function App() {
     incidentDate: new Date().toISOString().slice(0, 16),
     speciesId: "",
   });
+  const [identifyQuery, setIdentifyQuery] = useState("");
+  const [identifyBodyShape, setIdentifyBodyShape] = useState("");
 
   const token = useMemo(() => tokenFromStorage(), []);
   const userPayload = useMemo(() => decodeJwtPayload(token), [token]);
@@ -252,6 +230,22 @@ function App() {
 
   const topMatch = identifierResult[0];
 
+  const identifyMatches = useMemo(() => {
+    const query = identifyQuery.trim().toLowerCase();
+
+    return speciesCatalog
+      .filter((item) => {
+        const shapeMatch = identifyBodyShape ? item.bodyShape === identifyBodyShape : true;
+        if (!shapeMatch) return false;
+        if (!query) return true;
+
+        const commonName = (item.name || "").toLowerCase();
+        const scientificName = (item.scientificName || "").toLowerCase();
+        return commonName.includes(query) || scientificName.includes(query);
+      })
+      .slice(0, 18);
+  }, [identifyBodyShape, identifyQuery, speciesCatalog]);
+
   const guessedSpeciesMatches = useMemo(() => {
     const byBody = complaintGuess.bodyShape
       ? speciesCatalog.filter((item) => item.bodyShape === complaintGuess.bodyShape)
@@ -267,6 +261,14 @@ function App() {
   const openComplaintModal = () => {
     setComplaintStatus({ loading: false, error: "", success: "" });
     setIsComplaintOpen(true);
+  };
+
+  const openIdentifyView = () => {
+    setActiveView("identify");
+  };
+
+  const openDashboardView = () => {
+    setActiveView("dashboard");
   };
 
   const closeComplaintModal = () => {
@@ -403,165 +405,95 @@ function App() {
 
   return (
     <main className="dashboard-shell">
-      <header className="topbar card-reveal">
-        <div className="brand-block">
-          <span className="shield-dot" aria-hidden="true" />
-          <strong>AquaShield</strong>
-        </div>
-
-        <nav className="nav-row" aria-label="Primary">
-          <button className="nav-btn nav-btn-active" type="button">
-            Home
-          </button>
-          <button className="nav-btn" type="button">
-            My Reports
-          </button>
-          <button className="nav-btn" type="button">
-            Identify Fish
-          </button>
-          <button className="nav-btn" type="button">
-            Species
-          </button>
-        </nav>
-
-        <div className="avatar">{firstName.charAt(0).toUpperCase()}</div>
-      </header>
-
-      <section className="hero card-reveal delay-1">
-        <div className="hero-copy">
-          <p className="hero-kicker">Good Morning, {firstName}</p>
-          <h1>Protect Sri Lanka&apos;s Ocean Species</h1>
-          <p className="hero-sub">Report illegal fishing or identify a species in seconds.</p>
-
-          <div className="hero-actions">
-            <button className="solid-btn" type="button" onClick={openComplaintModal}>
-              Create Illegal Fish Report
-            </button>
-          </div>
-        </div>
-      </section>
+      {activeView === "dashboard" ? (
+        <UserDashboard
+          firstName={firstName}
+          isLoading={isLoading}
+          reportCount={reportCount}
+          underReviewCount={underReviewCount}
+          identifiedSpeciesCount={identifiedSpeciesCount}
+          recentReports={recentReports}
+          protectedSpecies={protectedSpecies}
+          topMatch={topMatch}
+          last30DaysIncidents={last30DaysIncidents}
+          onOpenComplaintModal={openComplaintModal}
+          onOpenIdentifyView={openIdentifyView}
+        />
+      ) : null}
 
       {error ? <p className="error-banner">{error}</p> : null}
       {complaintStatus.success ? <p className="success-banner">{complaintStatus.success}</p> : null}
 
-      <section className="dashboard-grid">
-        <div className="left-column">
-          <div className="activity-metrics card-reveal delay-2">
-            <article className="metric-card">
-              <h3>Reports filed</h3>
-              <p className="metric-value">{isLoading ? "-" : reportCount}</p>
-              <small>{reportCount > 0 ? "3 resolved" : "No reports yet"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Under review</h3>
-              <p className="metric-value">{isLoading ? "-" : underReviewCount}</p>
-              <small>{underReviewCount > 0 ? "1 escalated" : "All cleared"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Species identified</h3>
-              <p className="metric-value">{isLoading ? "-" : identifiedSpeciesCount}</p>
-              <small>Via reports submitted</small>
-            </article>
+      {activeView === "identify" ? (
+        <section className="identify-shell card-reveal delay-2">
+          <div className="section-head">
+            <h2>Identify Species</h2>
+            <button className="inline-link" type="button" onClick={openDashboardView}>
+              Back to dashboard →
+            </button>
           </div>
 
-          <section className="recent-reports card-reveal delay-4">
-            <div className="section-head">
-              <h2>Recent reports</h2>
+          <p className="identify-note">
+            Search by fish name. If you are not sure, select body shape to narrow the results.
+          </p>
+
+          <label className="identify-label" htmlFor="identify-search">
+            Search by fish name
+          </label>
+          <input
+            id="identify-search"
+            className="identify-input"
+            type="text"
+            placeholder="e.g. Tuna, Mackerel, Coral Trout"
+            value={identifyQuery}
+            onChange={(e) => setIdentifyQuery(e.target.value)}
+          />
+
+          <div className="identify-filters">
+            <p>Body shape</p>
+            <div className="pills">
+              <button
+                type="button"
+                className={`pill ${identifyBodyShape === "" ? "pill-active" : ""}`}
+                onClick={() => setIdentifyBodyShape("")}
+              >
+                All
+              </button>
+              {BODY_SHAPES.map((shape) => (
+                <button
+                  key={`identify-${shape}`}
+                  type="button"
+                  className={`pill ${identifyBodyShape === shape ? "pill-active" : ""}`}
+                  onClick={() => setIdentifyBodyShape(shape)}
+                >
+                  {toTitleCase(shape)}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {recentReports.length === 0 && !isLoading ? (
-              <p className="empty-state">No reports submitted yet.</p>
-            ) : null}
-
-            {recentReports.map((report) => {
-              const stage = statusStageMap[report.status] || 1;
-              const stageText = `Step ${stage} of 4`;
-              const speciesLabel = report.speciesInvolved?.[0]?.name || "Species unidentified";
-
-              return (
-                <article key={report._id} className="report-item">
-                  <div className="report-head">
-                    <h3>{report.incidentType}</h3>
-                    <span className={STATUS_STYLES[report.status] || "chip chip-gray"}>
-                      {report.status}
+          {identifyMatches.length === 0 ? (
+            <p className="empty-state">No species found. Try another name or body shape.</p>
+          ) : (
+            <div className="identify-grid">
+              {identifyMatches.map((item) => (
+                <article key={item._id || item.id} className="identify-card">
+                  <h3>{item.name}</h3>
+                  <p>{item.scientificName}</p>
+                  <div className="identify-meta-row">
+                    <span className="chip chip-blue">{toTitleCase(item.bodyShape || "unknown")}</span>
+                    <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
+                      {item.isFullyBanned ? "Banned" : item.protectionStatus || "Status unknown"}
                     </span>
                   </div>
-
-                  <p className="report-meta">Filed {formatDate(report.createdAt)}</p>
-                  <p className="species-line">{speciesLabel}</p>
-
-                  <div className="progress-track" role="progressbar" aria-valuenow={stage} aria-valuemin="1" aria-valuemax="4">
-                    <span style={{ width: `${(stage / 4) * 100}%` }} />
-                  </div>
-
-                  <p className="step-label">{stageText}</p>
-                </article>
-              );
-            })}
-          </section>
-        </div>
-
-        <aside className="right-column">
-          <section className="identifier-card card-reveal delay-2">
-            <div className="section-head">
-              <h2>Quick fish identifier</h2>
-              <button className="inline-link" type="button">
-                Full tool →
-              </button>
-            </div>
-
-            <article className="fish-result">
-              <h3>{topMatch?.name}</h3>
-              <p>{topMatch?.scientificName || "Adjust filters to find species."}</p>
-              <button className="solid-btn identify-btn" type="button">
-                Identify Species
-              </button>
-              <p className="identify-help">
-                Pick a body shape and tail shape to narrow the match quickly.
-              </p>
-            </article>
-          </section>
-
-          <section className="species-card card-reveal delay-3">
-            <div className="section-head">
-              <h2>Protected species nearby</h2>
-              <button className="inline-link" type="button">
-                View all →
-              </button>
-            </div>
-
-            <div className="species-list">
-              {protectedSpecies.map((item) => (
-                <article key={item._id || item.id} className="species-item">
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.scientificName}</p>
-                  </div>
-                  <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
-                    {item.isFullyBanned ? "Banned" : item.protectionStatus}
-                  </span>
                 </article>
               ))}
             </div>
-          </section>
+          )}
+        </section>
+      ) : null}
 
-          <section className="map-card card-reveal delay-4">
-            <div className="section-head">
-              <h2>Incident map</h2>
-              <button className="inline-link" type="button">
-                Open map →
-              </button>
-            </div>
-
-            <div className="map-box">
-              <p>{last30DaysIncidents} incidents near you</p>
-              <small>Sri Lanka · last 30 days</small>
-            </div>
-          </section>
-        </aside>
-      </section>
-
-      {isComplaintOpen ? (
+      {activeView === "dashboard" && isComplaintOpen ? (
         <section className="report-form-panel card-reveal" role="region" aria-label="Create illegal fish report">
           <div className="complaint-modal complaint-modal-inline">
             <div className="modal-header">
