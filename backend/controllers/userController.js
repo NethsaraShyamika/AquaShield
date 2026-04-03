@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendWelcomeEmail ,sendOtpEmail, sendPasswordResetSuccessEmail} from "../utils/sendEmail.js";
 
+const JWT_SECRET = process.env.JWT_SECRET || "icomputers";
+
 export async function createUser(req, res) {
   const data = req.body;
   try {
@@ -65,7 +67,7 @@ export async function loginUser(req, res) {
       image: user.image,
     };
 
-    const token = jwt.sign(payload, "icomputers", { expiresIn: "48h" });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "48h" });
     console.log(token);
 
     // ✅ Save user to session
