@@ -1005,8 +1005,8 @@ export default function CaseManagement() {
               <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "#fff" }}
-                className="pl-8 pr-8 py-2.5 rounded-xl text-sm appearance-none focus:outline-none cursor-pointer min-w-[160px]">
-                <option value="ALL">All Statuses</option>
+                className="pl-8 pr-8 py-2.5 rounded-xl text-sm appearance-none focus:outline-none cursor-pointer min-w-40">
+                <option value="ALL">All Statuses</option> 
                 {STATUSES.map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
               </select>
               <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
@@ -1014,8 +1014,8 @@ export default function CaseManagement() {
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-500 pointer-events-none" />
               <select value={filterPriority} onChange={e => { setFilterPriority(e.target.value); setPage(1); }}
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "#fff" }}
-                className="pl-8 pr-8 py-2.5 rounded-xl text-sm appearance-none focus:outline-none cursor-pointer min-w-[140px]">
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "#fff" }}
+              className="pl-8 pr-8 py-2.5 rounded-xl text-sm appearance-none focus:outline-none cursor-pointer min-w-35">
                 <option value="ALL">All Priorities</option>
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -1065,7 +1065,7 @@ export default function CaseManagement() {
                     {paginated.map((c, i) => (
                       <tr key={c._id}
                         style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", animationDelay: `${i * 40}ms` }}
-                        className="row-fade hover:bg-white/[0.02] transition-colors cursor-pointer"
+                        className="row-fade hover:bg-white/2 transition-colors cursor-pointer"
                         onClick={() => setSelected(c)}>
                         <td className="px-5 py-4">
                           <span style={{ fontFamily: "monospace", color: "#22d3ee", fontSize: 13, fontWeight: 700 }}>{c.caseNumber}</span>
@@ -1081,7 +1081,7 @@ export default function CaseManagement() {
                         <td className="px-5 py-4">
                           <span className="flex items-center gap-1.5 text-xs text-slate-400">
                             <MapPin size={11} className="text-slate-600 shrink-0" />
-                            <span className="truncate max-w-[130px]">{c.locationName || "—"}</span>
+                            <span className="truncate max-w-32.5">{c.locationName || "—"}</span>
                           </span>
                         </td>
                         <td className="px-5 py-4"><PriorityBadge priority={c.priority} /></td>
@@ -1125,7 +1125,7 @@ export default function CaseManagement() {
 
         {/* Toast */}
         {toast && (
-          <div className="fixed bottom-6 right-6 z-[100] toast-in">
+          <div className="fixed bottom-6 right-6 z-100 toast-in">
             <div style={{ background: toast.type === "success" ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${toast.type === "success" ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: toast.type === "success" ? "#34d399" : "#f87171", fontFamily: "'DM Sans', sans-serif" }}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold shadow-2xl">
               {toast.type === "success" ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}

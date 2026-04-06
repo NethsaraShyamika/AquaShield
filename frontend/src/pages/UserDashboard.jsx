@@ -1,3 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
+import "../App.css";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 const STATUS_STYLES = {
   Pending: "chip chip-amber",
   "Under Review": "chip chip-blue",
@@ -16,189 +22,160 @@ const statusStageMap = {
 
 function formatDate(value) {
   if (!value) return "Unknown date";
-  const date = new Date(value);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString();
 }
 
-export default function UserDashboard({
-  firstName,
-  isLoading,
-  reportCount,
-  underReviewCount,
-  identifiedSpeciesCount,
-  recentReports,
-  protectedSpecies,
-  topMatch,
-  last30DaysIncidents,
-  onOpenComplaintModal,
-  onOpenIdentifyView,
-}) {
+// ✅ Get token
+function getToken() {
   return (
-    <>
-      <header className="topbar card-reveal">
-        <div className="brand-block">
-          <span className="shield-dot" aria-hidden="true" />
-          <strong>AquaShield</strong>
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token") ||
+    ""
+  );
+}
+
+// ✅ Decode JWT
+function decodeToken(token) {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
+export default function UserDashboard() {
+  const [reports, setReports] = useState([]);
+  const [species, setSpecies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const token = getToken();
+  const user = decodeToken(token);
+  const firstName = user?.firstName || "User";
+
+  // ✅ Fetch data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [reportsRes, speciesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/reports/my`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/species`),
+        ]);
+
+        const reportsData = await reportsRes.json();
+        const speciesData = await speciesRes.json();
+
+        setReports(reportsData?.reports || []);
+        setSpecies(speciesData || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // ✅ Calculations
+  const reportCount = reports.length;
+
+  const underReviewCount = reports.filter((r) =>
+    ["Pending", "Under Review"].includes(r.status)
+  ).length;
+
+  const identifiedSpeciesCount = useMemo(() => {
+    const set = new Set();
+    reports.forEach((r) =>
+      r.speciesInvolved?.forEach((s) => set.add(s?._id))
+    );
+    return set.size;
+  }, [reports]);
+
+  const recentReports = reports.slice(0, 3);
+
+  const protectedSpecies = species
+    .filter((s) =>
+      ["Protected", "Endangered", "Banned"].includes(s.protectionStatus)
+    )
+    .slice(0, 3);
+
+  const last30DaysIncidents = reports.filter(
+    (r) =>
+      new Date(r.createdAt) >
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  ).length;
+
+  return (
+    <main className="dashboard-shell">
+      {/* HEADER */}
+      <header className="topbar">
+        <strong>AquaShield</strong>
+        <div className="avatar">
+          {firstName.charAt(0).toUpperCase()}
         </div>
-
-        <nav className="nav-row" aria-label="Primary">
-          <button className="nav-btn nav-btn-active nav-option-animate" type="button" style={{ "--option-delay": "0ms" }}>
-            Home
-          </button>
-          <button className="nav-btn nav-option-animate" type="button" style={{ "--option-delay": "90ms" }}>
-            My Reports
-          </button>
-          <button className="nav-btn nav-option-animate" type="button" onClick={onOpenIdentifyView} style={{ "--option-delay": "180ms" }}>
-            Identify Fish
-          </button>
-          <button className="nav-btn nav-option-animate" type="button" style={{ "--option-delay": "270ms" }}>
-            Species
-          </button>
-        </nav>
-
-        <div className="avatar">{firstName.charAt(0).toUpperCase()}</div>
       </header>
 
-      <section className="hero card-reveal delay-1">
-        <div className="hero-copy">
-          <p className="hero-kicker">Good Morning, {firstName}</p>
-          <h1>Protect Sri Lanka's Ocean Species</h1>
-          <p className="hero-sub">Report illegal fishing or identify a species in seconds.</p>
-
-          <div className="hero-actions">
-            <button className="solid-btn" type="button" onClick={onOpenComplaintModal}>
-              Create Illegal Fish Report
-            </button>
-          </div>
-        </div>
+      {/* HERO */}
+      <section className="hero">
+        <h1>Welcome, {firstName}</h1>
+        <p>Protect Sri Lanka's Ocean Species</p>
       </section>
 
+      {/* METRICS */}
       <section className="dashboard-grid">
-        <div className="left-column">
-          <div className="activity-metrics card-reveal delay-2">
-            <article className="metric-card">
-              <h3>Reports filed</h3>
-              <p className="metric-value">{isLoading ? "-" : reportCount}</p>
-              <small>{reportCount > 0 ? "3 resolved" : "No reports yet"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Under review</h3>
-              <p className="metric-value">{isLoading ? "-" : underReviewCount}</p>
-              <small>{underReviewCount > 0 ? "1 escalated" : "All cleared"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Species identified</h3>
-              <p className="metric-value">{isLoading ? "-" : identifiedSpeciesCount}</p>
-              <small>Via reports submitted</small>
-            </article>
-          </div>
-
-          <section className="recent-reports card-reveal delay-4">
-            <div className="section-head">
-              <h2>Recent reports</h2>
-            </div>
-
-            {recentReports.length === 0 && !isLoading ? (
-              <p className="empty-state">No reports submitted yet.</p>
-            ) : null}
-
-            {recentReports.map((report) => {
-              const stage = statusStageMap[report.status] || 1;
-              const stageText = `Step ${stage} of 4`;
-              const speciesLabel = report.speciesInvolved?.[0]?.name || "Species unidentified";
-
-              return (
-                <article key={report._id} className="report-item">
-                  <div className="report-head">
-                    <h3>{report.incidentType}</h3>
-                    <span className={STATUS_STYLES[report.status] || "chip chip-gray"}>
-                      {report.status}
-                    </span>
-                  </div>
-
-                  <p className="report-meta">Filed {formatDate(report.createdAt)}</p>
-                  <p className="species-line">{speciesLabel}</p>
-
-                  <div
-                    className="progress-track"
-                    role="progressbar"
-                    aria-valuenow={stage}
-                    aria-valuemin="1"
-                    aria-valuemax="4"
-                  >
-                    <span style={{ width: `${(stage / 4) * 100}%` }} />
-                  </div>
-
-                  <p className="step-label">{stageText}</p>
-                </article>
-              );
-            })}
-          </section>
+        <div>
+          <h3>Reports: {isLoading ? "-" : reportCount}</h3>
+          <h3>Under Review: {underReviewCount}</h3>
+          <h3>Species Identified: {identifiedSpeciesCount}</h3>
         </div>
 
-        <aside className="right-column">
-          <section className="identifier-card card-reveal delay-2">
-            <div className="section-head">
-              <h2>Quick fish identifier</h2>
-              <button className="inline-link" type="button">
-                Full tool →
-              </button>
-            </div>
+        {/* RECENT REPORTS */}
+        <div>
+          <h2>Recent Reports</h2>
 
-            <article className="fish-result">
-              <h3>{topMatch?.name}</h3>
-              <p>{topMatch?.scientificName || "Adjust filters to find species."}</p>
-              <button className="solid-btn identify-btn" type="button" onClick={onOpenIdentifyView}>
-                Identify Species
-              </button>
-              <p className="identify-help">
-                Pick a body shape and tail shape to narrow the match quickly.
-              </p>
-            </article>
-          </section>
+          {recentReports.length === 0 && !isLoading && (
+            <p>No reports yet</p>
+          )}
 
-          <section className="species-card card-reveal delay-3">
-            <div className="section-head">
-              <h2>Protected species nearby</h2>
-              <button className="inline-link" type="button">
-                View all →
-              </button>
-            </div>
+          {recentReports.map((report) => {
+            const stage = statusStageMap[report.status] || 1;
 
-            <div className="species-list">
-              {protectedSpecies.map((item) => (
-                <article key={item._id || item.id} className="species-item">
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.scientificName}</p>
-                  </div>
-                  <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
-                    {item.isFullyBanned ? "Banned" : item.protectionStatus}
-                  </span>
-                </article>
-              ))}
-            </div>
-          </section>
+            return (
+              <div key={report._id}>
+                <h4>{report.incidentType}</h4>
+                <p>{formatDate(report.createdAt)}</p>
+                <span className={STATUS_STYLES[report.status]}>
+                  {report.status}
+                </span>
 
-          <section className="map-card card-reveal delay-4">
-            <div className="section-head">
-              <h2>Incident map</h2>
-              <button className="inline-link" type="button">
-                Open map →
-              </button>
-            </div>
+                <div>
+                  Progress: {(stage / 4) * 100}%
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-            <div className="map-box">
-              <p>{last30DaysIncidents} incidents near you</p>
-              <small>Sri Lanka · last 30 days</small>
+        {/* PROTECTED SPECIES */}
+        <div>
+          <h2>Protected Species</h2>
+          {protectedSpecies.map((s) => (
+            <div key={s._id}>
+              <h4>{s.name}</h4>
+              <p>{s.scientificName}</p>
             </div>
-          </section>
-        </aside>
+          ))}
+        </div>
+
+        {/* MAP */}
+        <div>
+          <h2>Incidents</h2>
+          <p>{last30DaysIncidents} in last 30 days</p>
+        </div>
       </section>
-    </>
+    </main>
   );
 }

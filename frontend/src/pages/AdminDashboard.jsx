@@ -72,7 +72,7 @@ function StatCard({ icon: Icon, label, value, sub, accent, loading, index }) {
       }}
     >
       {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl"
+      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
 
       {/* Floating glow blob */}
