@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../App.css";
 
 const API_BASE_URL =
@@ -25,7 +26,6 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
-// ✅ Get token
 function getToken() {
   return (
     localStorage.getItem("token") ||
@@ -34,7 +34,6 @@ function getToken() {
   );
 }
 
-// ✅ Decode JWT
 function decodeToken(token) {
   try {
     const payload = token.split(".")[1];
@@ -48,12 +47,30 @@ export default function UserDashboard() {
   const [reports, setReports] = useState([]);
   const [species, setSpecies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const token = getToken();
   const user = decodeToken(token);
   const firstName = user?.firstName || "User";
 
-  // ✅ Fetch data
+  // ✅ Logout function
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/users/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.log("Logout error:", err);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      navigate("/login");
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -79,7 +96,6 @@ export default function UserDashboard() {
     loadData();
   }, []);
 
-  // ✅ Calculations
   const reportCount = reports.length;
 
   const underReviewCount = reports.filter((r) =>
@@ -113,8 +129,29 @@ export default function UserDashboard() {
       {/* HEADER */}
       <header className="topbar">
         <strong>AquaShield</strong>
-        <div className="avatar">
-          {firstName.charAt(0).toUpperCase()}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="avatar">
+            {firstName.charAt(0).toUpperCase()}
+          </div>
+          {/* ✅ Logout button */}
+          <button
+            onClick={handleLogout}
+            style={{
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              color: "#f87171",
+              padding: "6px 14px",
+              borderRadius: "10px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseOver={(e) => e.target.style.background = "rgba(239, 68, 68, 0.25)"}
+            onMouseOut={(e) => e.target.style.background = "rgba(239, 68, 68, 0.15)"}
+          >
+            Logout
+          </button>
         </div>
       </header>
 
@@ -135,14 +172,11 @@ export default function UserDashboard() {
         {/* RECENT REPORTS */}
         <div>
           <h2>Recent Reports</h2>
-
           {recentReports.length === 0 && !isLoading && (
             <p>No reports yet</p>
           )}
-
           {recentReports.map((report) => {
             const stage = statusStageMap[report.status] || 1;
-
             return (
               <div key={report._id}>
                 <h4>{report.incidentType}</h4>
@@ -150,10 +184,7 @@ export default function UserDashboard() {
                 <span className={STATUS_STYLES[report.status]}>
                   {report.status}
                 </span>
-
-                <div>
-                  Progress: {(stage / 4) * 100}%
-                </div>
+                <div>Progress: {(stage / 4) * 100}%</div>
               </div>
             );
           })}
