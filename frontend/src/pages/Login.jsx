@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { InputField, LoadingSpinner } from "./AuthPage";
 
 /**
@@ -10,7 +9,7 @@ import { InputField, LoadingSpinner } from "./AuthPage";
  * - error: string - error message from parent
  * - onForgotPassword: function - handles forgot password click
  */
-export function LoginForm({ onSubmit, isLoading, error, onForgotPassword }) {
+export default function LoginForm({ onSubmit, isLoading, error, onForgotPassword }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -102,7 +101,7 @@ export function LoginForm({ onSubmit, isLoading, error, onForgotPassword }) {
       <button
         type="submit"
         disabled={isLoading}
-        className="relative w-full bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 mt-1 flex items-center justify-center gap-2"
+        className="relative w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 mt-1 flex items-center justify-center gap-2"
       >
         {isLoading ? (
           <>
@@ -134,84 +133,5 @@ export function LoginForm({ onSubmit, isLoading, error, onForgotPassword }) {
         ))}
       </div>
     </form>
-  );
-}
-
-const getToken = () => localStorage.getItem("token");
-const decodeToken = (token) => {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch {
-    return null;
-  }
-};
-
-export default function Login() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = getToken();
-    const user = decodeToken(token);
-    if (user) {
-      navigate(user.isAdmin ? "/admin/dashboard" : "/user-dashboard", { replace: true });
-    }
-  }, [navigate]);
-
-  const handleLogin = async (formData) => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
-      const user = decodeToken(data.token);
-      navigate(user?.isAdmin ? "/admin/dashboard" : "/user-dashboard", { replace: true });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleForgotPassword = () => {
-    navigate("/contact");
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10">
-      <div className="w-full max-w-2xl rounded-4xl border border-white/10 bg-slate-900/90 p-10 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
-        <div className="mb-8 text-center">
-          <p className="text-sm uppercase tracking-[0.35em] text-cyan-300/80">AquaShield</p>
-          <h1 className="mt-3 text-4xl font-bold text-white">Log in to your portal</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            Access your dashboard, review reports, and continue protecting marine wildlife.
-          </p>
-        </div>
-
-        <LoginForm
-          onSubmit={handleLogin}
-          isLoading={isLoading}
-          error={error}
-          onForgotPassword={handleForgotPassword}
-        />
-      </div>
-    </div>
   );
 }

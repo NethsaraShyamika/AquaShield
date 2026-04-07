@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"; // ✅ ADDED useEffect
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LoginForm } from "./Login";
+import LoginForm from "./Login";
 import SignupForm from "./Signup";
 
 // Toast Notification Component
 const Toast = ({ message, type, onClose }) => (
-  <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-medium animate-slide-in ${type === "success" ? "bg-linear-to-r from-emerald-500 to-teal-500" : "bg-linear-to-r from-rose-500 to-pink-500"
+  <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-medium animate-slide-in ${type === "success" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-rose-500 to-pink-500"
     }`}>
     <span>{type === "success" ? "✓" : "✕"}</span>
     <span>{message}</span>
@@ -44,21 +44,21 @@ export const InputField = ({ label, type = "text", placeholder, value, onChange,
 const OceanBackground = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     {/* Base ocean gradient */}
-    <div className="absolute inset-0 bg-linear-to-b from-[#020e1f] via-[#041828] to-[#061e35]" />
+    <div className="absolute inset-0 bg-gradient-to-b from-[#020e1f] via-[#041828] to-[#061e35]" />
 
     {/* Bioluminescent glow */}
     <div className="absolute top-20 left-1/3 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
     <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2.5s' }} />
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-100 bg-teal-500/5 rounded-full blur-3xl" />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-teal-500/5 rounded-full blur-3xl" />
 
     {/* Underwater light rays */}
-    <div className="absolute top-0 left-[25%] w-px h-3/4 bg-linear-to-b from-cyan-300/12 to-transparent" />
-    <div className="absolute top-0 left-[45%] w-0.5 h-2/3 bg-linear-to-b from-blue-300/8 to-transparent" />
-    <div className="absolute top-0 left-[65%] w-px h-1/2 bg-linear-to-b from-cyan-300/6 to-transparent" />
-    <div className="absolute top-0 right-[20%] w-px h-3/5 bg-linear-to-b from-teal-300/8 to-transparent" />
+    <div className="absolute top-0 left-[25%] w-px h-3/4 bg-gradient-to-b from-cyan-300/12 to-transparent" />
+    <div className="absolute top-0 left-[45%] w-0.5 h-2/3 bg-gradient-to-b from-blue-300/8 to-transparent" />
+    <div className="absolute top-0 left-[65%] w-px h-1/2 bg-gradient-to-b from-cyan-300/6 to-transparent" />
+    <div className="absolute top-0 right-[20%] w-px h-3/5 bg-gradient-to-b from-teal-300/8 to-transparent" />
 
     {/* Subtle grid */}
-    <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.025)_1px,transparent_1px)] bg-size-[60px_60px]" />
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.025)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
     {/* Seaweed silhouettes - far left */}
     <svg className="absolute bottom-0 left-0 w-56 opacity-50" viewBox="0 0 220 500" preserveAspectRatio="xMinYMax meet">
@@ -148,7 +148,7 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -185,7 +185,7 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch("/api/users",  {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -247,7 +247,7 @@ export default function AuthPage() {
       <nav className="relative z-30 flex items-center justify-between px-8 py-5">
         {/* Logo - Wrapped with Link to go home */}
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-linear-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center text-lg shadow-lg shadow-cyan-500/40">
+          <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center text-lg shadow-lg shadow-cyan-500/40">
             🌊
           </div>
           <span className="text-xl font-bold text-white tracking-tight">
@@ -325,12 +325,12 @@ export default function AuthPage() {
         {/* Toggle login/signup in navbar */}
         <div className="hidden md:flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl p-1">
           <button onClick={() => { setActiveForm("login"); setError(""); }}
-            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeForm === "login" ? "bg-linear-to-r from-cyan-500 to-blue-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeForm === "login" ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
               }`}>
             Sign In
           </button>
           <button onClick={() => { setActiveForm("signup"); setError(""); }}
-            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeForm === "signup" ? "bg-linear-to-r from-cyan-500 to-blue-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeForm === "signup" ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
               }`}>
             Sign Up
           </button>
@@ -413,11 +413,11 @@ export default function AuthPage() {
           })}
           <div className="flex gap-2 pt-2 border-t border-white/5">
             <button onClick={() => { setActiveForm("login"); setError(""); setMenuOpen(false); }}
-              className={`flex-1 py-2 text-sm rounded-xl transition-all ${activeForm === "login" ? "bg-linear-to-r from-cyan-500 to-blue-600 text-white" : "border border-white/20 text-white/60"}`}>
+              className={`flex-1 py-2 text-sm rounded-xl transition-all ${activeForm === "login" ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "border border-white/20 text-white/60"}`}>
               Sign In
             </button>
             <button onClick={() => { setActiveForm("signup"); setError(""); setMenuOpen(false); }}
-              className={`flex-1 py-2 text-sm rounded-xl transition-all ${activeForm === "signup" ? "bg-linear-to-r from-cyan-500 to-blue-600 text-white" : "border border-white/20 text-white/60"}`}>
+              className={`flex-1 py-2 text-sm rounded-xl transition-all ${activeForm === "signup" ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "border border-white/20 text-white/60"}`}>
               Sign Up
             </button>
           </div>
@@ -443,7 +443,7 @@ export default function AuthPage() {
               {content.title.split(" ").map((word, i) => (
                 <span key={i}>
                   {i === content.title.split(" ").length - 1
-                    ? <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-400">{word}</span>
+                    ? <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{word}</span>
                     : <span>{word} </span>
                   }
                 </span>
@@ -494,9 +494,9 @@ export default function AuthPage() {
           <div className="flex justify-center md:justify-end animate-fade-right">
             <div className="w-full max-w-sm">
               {/* Form card */}
-              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 shadow-2xl shadow-black/50 relative overflow-hidden">
+              <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/10 rounded-3xl p-7 shadow-2xl shadow-black/50 relative overflow-hidden">
                 {/* Inner glow */}
-                <div className="absolute inset-0 bg-linear-to-br from-cyan-500/4 via-transparent to-blue-600/4 pointer-events-none rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/4 via-transparent to-blue-600/4 pointer-events-none rounded-3xl" />
 
                 {/* Form title */}
                 <div className="mb-6 relative z-10">

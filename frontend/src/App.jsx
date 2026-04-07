@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import PageTransition from "./components/PageTransition";
 
 import "./index.css";
 import "./App.css";
@@ -9,7 +10,7 @@ import AboutPage from "./pages/AboutPage";
 import ServicePage from "./pages/ServicePage";
 import ContactPage from "./pages/ContactPage";
 import UserDashboard from "./pages/UserDashboard";
-import Login from "./pages/Login";
+import AuthPage from "./pages/AuthPage";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
@@ -57,12 +58,12 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         {/* Public */}
-        <Route path="/" element={<Navigate replace to="/login" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<DashboardRedirect />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/services" element={<ServicePage />} />
-        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/dashboard" element={<PageTransition><DashboardRedirect /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+        <Route path="/services" element={<PageTransition><ServicePage /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
 
         {/* User */}
         <Route path="/user-dashboard" element={

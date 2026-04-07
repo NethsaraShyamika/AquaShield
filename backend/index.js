@@ -34,7 +34,10 @@ function go() {
   console.log("Started...");
 }
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
 app.use(express.json());
 app.use("/api/species", speciesRoutes);
 app.use("/api/cases", caseRoutes);
