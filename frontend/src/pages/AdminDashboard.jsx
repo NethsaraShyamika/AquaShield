@@ -47,10 +47,10 @@ const PRIORITY_META = {
 // ─── SIDEBAR NAVIGATION ITEMS ─────────────────────────────────
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard",          icon: LayoutDashboard, path: "/admin/dashboard" },
-  { id: "cases",     label: "Case Management",    icon: Briefcase,       path: "/admin/cases"     },
+  { id: "users",     label: "User Management",    icon: Users,           path: "/admin/users"     },
   { id: "species",   label: "Species Management", icon: Fish,            path: "/admin/species"   },
-  { id: "reports",   label: "Reports",            icon: FileText,        path: "/admin/reports"   },
-  { id: "users",     label: "Users",              icon: Users,           path: "/admin/users"     },
+  { id: "reports",   label: "Report Management",  icon: FileText,        path: "/admin/reports"   },
+  { id: "cases",     label: "Case Management",    icon: Briefcase,       path: "/admin/cases"     },  
   { id: "settings",  label: "Settings",           icon: Settings,        path: "/admin/settings"  },
 ];
 
