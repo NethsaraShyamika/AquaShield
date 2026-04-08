@@ -20,7 +20,6 @@ const speciesSchema = new mongoose.Schema({
     // --- IDENTIFICATION STAGES ---
     bodyShape: {
         type: String,
-        enum: ["oval", "torpedo", "flat", "eel-like", "box-like"],
         required: true
     },
     tailShape: {
@@ -30,12 +29,10 @@ const speciesSchema = new mongoose.Schema({
     },
     finType: {
         type: String,
-        enum: ["spiny", "soft-ray", "large-dorsal", "no-dorsal"],
         required: true
     },
     colorPattern: {
         type: String,
-        enum: ["blue-silver", "brown", "white-striped", "spotted", "plain"],
         required: true
     },
 
