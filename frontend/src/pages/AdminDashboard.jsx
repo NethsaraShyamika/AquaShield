@@ -64,10 +64,12 @@ const fmtDate = (d) =>
 function StatCard({ icon: Icon, label, value, sub, accent, loading, index }) {
   return (
     <div
-      className="stat-card relative overflow-hidden rounded-2xl p-6 flex flex-col gap-3 group cursor-default"
+      className="stat-card admin-glass relative overflow-hidden rounded-2xl p-6 flex flex-col gap-3 group cursor-default"
       style={{
-        background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
-        border: `1px solid rgba(255,255,255,0.07)`,
+        background: "var(--card-bg)",
+        border: `1px solid var(--card-border)`,
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
         animationDelay: `${index * 80}ms`,
       }}
     >
@@ -237,9 +239,57 @@ export default function AdminDashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
+        :root {
+          --ocean-start: #1E3A5F;
+          --ocean-end: #0C1423;
+          --card-bg: rgba(255, 255, 255, 0.08);
+          --card-border: rgba(255, 255, 255, 0.18);
+        }
+
         *, *::before, *::after { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body { background: #040d1a; }
+
+        .admin-dashboard {
+          position: relative;
+          min-height: 100vh;
+          background: linear-gradient(135deg, var(--ocean-start) 0%, var(--ocean-end) 100%);
+          overflow: hidden;
+        }
+
+        .admin-dashboard::before,
+        .admin-dashboard::after {
+          content: "";
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(70px);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .admin-dashboard::before {
+          width: 360px;
+          height: 360px;
+          top: -120px;
+          left: -80px;
+          background: rgba(59, 130, 246, 0.18);
+        }
+
+        .admin-dashboard::after {
+          width: 420px;
+          height: 420px;
+          right: -120px;
+          bottom: -160px;
+          background: rgba(30, 58, 95, 0.26);
+        }
+
+        .admin-glass {
+          background: var(--card-bg) !important;
+          border: 1px solid var(--card-border) !important;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
+        }
 
         ::-webkit-scrollbar { width: 3px; height: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -273,7 +323,7 @@ export default function AdminDashboard() {
         @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
       `}</style>
 
-      <div style={{ fontFamily: "'Outfit', sans-serif", width: "100vw", minHeight: "100vh", background: "#040d1a", color: "#fff", display: "flex", overflowX: "hidden" }}>
+      <div className="admin-dashboard" style={{ fontFamily: "'Outfit', sans-serif", width: "100vw", minHeight: "100vh", color: "#fff", display: "flex", overflowX: "hidden" }}>
 
         {/* ── ANIMATED BACKGROUND ─────────────────────────────── */}
         <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
@@ -431,7 +481,7 @@ export default function AdminDashboard() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16 }} className="fade-up d2">
 
               {/* Bar chart */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 24 }}>
+              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Cases Over Time</p>
@@ -460,7 +510,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Pie chart */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 24 }}>
+              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Priority Split</p>
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>Case urgency breakdown</p>
@@ -498,7 +548,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* ── STATUS BREAKDOWN ──────────────────────────────── */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 24 }} className="fade-up d3">
+            <div style={{ borderRadius: 20, padding: 24 }} className="admin-glass fade-up d3">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                 <div>
                   <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Case Status Overview</p>
@@ -526,7 +576,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* ── RECENT CASES TABLE ────────────────────────────── */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden" }} className="fade-up d4">
+            <div style={{ borderRadius: 20, overflow: "hidden" }} className="admin-glass fade-up d4">
 
               {/* Table header */}
               <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -617,7 +667,7 @@ export default function AdminDashboard() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="fade-up d5">
 
               {/* Recent users */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 24 }}>
+              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Recent Users</p>
@@ -666,7 +716,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Quick overview */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+              <div className="admin-glass" style={{ borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
                 <div>
                   <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Quick Overview</p>
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>System performance metrics</p>

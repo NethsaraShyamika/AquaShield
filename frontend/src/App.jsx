@@ -14,6 +14,7 @@ import AuthPage from "./pages/AuthPage";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSpeciesManagement from "./pages/AdminSpeciesManagement";
 import CaseManagement from "./pages/CaseManagement";
 import AdminRoute from "./components/AdminRoute";
 
@@ -78,6 +79,15 @@ function AnimatedRoutes() {
           element={
             <AdminRoute>
               <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/species"
+          element={
+            <AdminRoute>
+              <AdminSpeciesManagement />
             </AdminRoute>
           }
         />
