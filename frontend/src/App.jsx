@@ -10,6 +10,8 @@ import AboutPage from "./pages/AboutPage";
 import ServicePage from "./pages/ServicePage";
 import ContactPage from "./pages/ContactPage";
 import UserDashboard from "./pages/UserDashboard";
+import MyReports from "./pages/MyReports";
+import ReportForm from "./pages/ReportForm";
 import AuthPage from "./pages/AuthPage";
 
 // Admin
@@ -17,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminSpeciesManagement from "./pages/AdminSpeciesManagement";
 import CaseManagement from "./pages/CaseManagement";
 import AdminRoute from "./components/AdminRoute";
+import AdminReports from "./pages/AdminReports";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -72,6 +75,16 @@ function AnimatedRoutes() {
             <UserDashboard />
           </UserRoute>
         } />
+        <Route path="/my-reports" element={
+          <UserRoute>
+            <MyReports />
+          </UserRoute>
+        } />
+        <Route path="/report-form" element={
+          <UserRoute>
+            <ReportForm />
+          </UserRoute>
+        } />
 
         {/* Admin (Protected) */}
         <Route
@@ -84,10 +97,28 @@ function AnimatedRoutes() {
         />
 
         <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <div className="p-4">User Management Coming Soon...</div>
+            </AdminRoute>
+          }
+        />
+
+        <Route
           path="/admin/species"
           element={
             <AdminRoute>
               <AdminSpeciesManagement />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminRoute>
+              <AdminReports />
             </AdminRoute>
           }
         />

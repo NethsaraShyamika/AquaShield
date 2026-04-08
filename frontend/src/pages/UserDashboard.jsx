@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import Footer from "../components/Footer";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -41,15 +42,18 @@ const IDENTIFY_BODY_SHAPES = [
 ];
 const BODY_SHAPE_REFERENCES = {
   Fusiform: {
-    description: "Streamlined, spindle-shaped body. Pointed at both ends, widens in the middle.",
+    description:
+      "Streamlined, spindle-shaped body. Pointed at both ends, widens in the middle.",
     image: "/fusiform-reference.png",
   },
   Compressiform: {
-    description: "Flattened side-to-side, like a pancake. High and narrow body.",
+    description:
+      "Flattened side-to-side, like a pancake. High and narrow body.",
     image: "/compressiform-reference.png",
   },
   Depressiform: {
-    description: "Flattened top to bottom, like a stingray. Wide and flat body.",
+    description:
+      "Flattened top to bottom, like a stingray. Wide and flat body.",
     image: "/depressiform-reference.png",
   },
   Anguilliform: {
@@ -153,7 +157,9 @@ function toTitleCase(value) {
 }
 
 function normalizeIdentifyShape(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeSpeciesBodyShape(value) {
@@ -188,9 +194,12 @@ function toSpeciesKey(item) {
 }
 
 function formatMonthRange(legalSeason) {
-  if (!legalSeason?.startMonth || !legalSeason?.endMonth) return "Not specified";
+  if (!legalSeason?.startMonth || !legalSeason?.endMonth)
+    return "Not specified";
   const monthName = (monthIndex) =>
-    new Date(2000, monthIndex - 1, 1).toLocaleString(undefined, { month: "long" });
+    new Date(2000, monthIndex - 1, 1).toLocaleString(undefined, {
+      month: "long",
+    });
   return `${monthName(legalSeason.startMonth)} - ${monthName(legalSeason.endMonth)}`;
 }
 
@@ -252,6 +261,8 @@ function DashboardHome({
   last30DaysIncidents,
   onOpenComplaintModal,
   onOpenIdentifyView,
+  onViewMyReports,
+  onViewReportForm,
   isProfileMenuOpen,
   onToggleProfileMenu,
   onViewProfile,
@@ -267,16 +278,34 @@ function DashboardHome({
         </div>
 
         <nav className="nav-row" aria-label="Primary">
-          <button className="nav-btn nav-btn-active nav-option-animate" type="button" style={{ "--option-delay": "0ms" }}>
+          <button
+            className="nav-btn nav-btn-active nav-option-animate"
+            type="button"
+            style={{ "--option-delay": "0ms" }}
+          >
             Home
           </button>
-          <button className="nav-btn nav-option-animate" type="button" style={{ "--option-delay": "90ms" }}>
+          <button
+            className="nav-btn nav-option-animate"
+            type="button"
+            onClick={onViewMyReports}
+            style={{ "--option-delay": "90ms" }}
+          >
             My Reports
           </button>
-          <button className="nav-btn nav-option-animate" type="button" onClick={onOpenIdentifyView} style={{ "--option-delay": "180ms" }}>
+          <button
+            className="nav-btn nav-option-animate"
+            type="button"
+            onClick={onOpenIdentifyView}
+            style={{ "--option-delay": "180ms" }}
+          >
             Identify Fish
           </button>
-          <button className="nav-btn nav-option-animate" type="button" style={{ "--option-delay": "270ms" }}>
+          <button
+            className="nav-btn nav-option-animate"
+            type="button"
+            style={{ "--option-delay": "270ms" }}
+          >
             Species
           </button>
         </nav>
@@ -291,7 +320,10 @@ function DashboardHome({
             {(firstName?.charAt(0) || "U").toUpperCase()}
           </button>
           {isProfileMenuOpen && (
-            <div className="profile-dropdown profile-slidebar" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="profile-dropdown profile-slidebar"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 className="dropdown-item"
                 type="button"
@@ -315,11 +347,17 @@ function DashboardHome({
         <div className="hero-copy">
           <p className="hero-kicker">Good Morning, {firstName}</p>
           <h1>Protect Sri Lanka&apos;s Ocean Species</h1>
-          <p className="hero-sub">Report illegal fishing or identify a species in seconds.</p>
+          <p className="hero-sub">
+            Report illegal fishing or identify a species in seconds.
+          </p>
 
           <div className="hero-actions">
-            <button className="solid-btn" type="button" onClick={onOpenComplaintModal}>
-              Create Illegal Fish Report
+            <button
+              className="solid-btn"
+              type="button"
+              onClick={onViewReportForm}
+            >
+              Create Report
             </button>
           </div>
         </div>
@@ -335,12 +373,18 @@ function DashboardHome({
             </article>
             <article className="metric-card">
               <h3>Under review</h3>
-              <p className="metric-value">{isLoading ? "-" : underReviewCount}</p>
-              <small>{underReviewCount > 0 ? "1 escalated" : "All cleared"}</small>
+              <p className="metric-value">
+                {isLoading ? "-" : underReviewCount}
+              </p>
+              <small>
+                {underReviewCount > 0 ? "1 escalated" : "All cleared"}
+              </small>
             </article>
             <article className="metric-card">
               <h3>Species identified</h3>
-              <p className="metric-value">{isLoading ? "-" : identifiedSpeciesCount}</p>
+              <p className="metric-value">
+                {isLoading ? "-" : identifiedSpeciesCount}
+              </p>
               <small>Via reports submitted</small>
             </article>
           </div>
@@ -357,18 +401,25 @@ function DashboardHome({
             {recentReports.map((report) => {
               const stage = statusStageMap[report.status] || 1;
               const stageText = `Step ${stage} of 4`;
-              const speciesLabel = report.speciesInvolved?.[0]?.name || "Species unidentified";
+              const speciesLabel =
+                report.speciesInvolved?.[0]?.name || "Species unidentified";
 
               return (
                 <article key={report._id} className="report-item">
                   <div className="report-head">
                     <h3>{report.incidentType}</h3>
-                    <span className={STATUS_STYLES[report.status] || "chip chip-gray"}>
+                    <span
+                      className={
+                        STATUS_STYLES[report.status] || "chip chip-gray"
+                      }
+                    >
                       {report.status}
                     </span>
                   </div>
 
-                  <p className="report-meta">Filed {formatDate(report.createdAt)}</p>
+                  <p className="report-meta">
+                    Filed {formatDate(report.createdAt)}
+                  </p>
                   <p className="species-line">{speciesLabel}</p>
 
                   <div
@@ -392,15 +443,25 @@ function DashboardHome({
           <section className="identifier-card card-reveal delay-2">
             <div className="section-head">
               <h2>Quick fish identifier</h2>
-              <button className="inline-link" type="button" onClick={onOpenIdentifyView}>
+              <button
+                className="inline-link"
+                type="button"
+                onClick={onOpenIdentifyView}
+              >
                 Full tool →
               </button>
             </div>
 
             <article className="fish-result">
               <h3>{topMatch?.name || "No species selected"}</h3>
-              <p>{topMatch?.scientificName || "Adjust filters to find species."}</p>
-              <button className="solid-btn identify-btn" type="button" onClick={onOpenIdentifyView}>
+              <p>
+                {topMatch?.scientificName || "Adjust filters to find species."}
+              </p>
+              <button
+                className="solid-btn identify-btn"
+                type="button"
+                onClick={onOpenIdentifyView}
+              >
                 Identify Species
               </button>
               <p className="identify-help">
@@ -421,7 +482,9 @@ function DashboardHome({
                     <h3>{item.name}</h3>
                     <p>{item.scientificName}</p>
                   </div>
-                  <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
+                  <span
+                    className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}
+                  >
                     {item.isFullyBanned ? "Banned" : item.protectionStatus}
                   </span>
                 </article>
@@ -441,6 +504,8 @@ function DashboardHome({
           </section>
         </aside>
       </section>
+
+      <Footer />
     </>
   );
 }
@@ -452,7 +517,10 @@ export default function UserDashboard() {
   const [reports, setReports] = useState([]);
   const [speciesCatalog, setSpeciesCatalog] = useState([]);
   const [identifierResult, setIdentifierResult] = useState([]);
-  const [filters, setFilters] = useState({ bodyShape: "torpedo", tailShape: "crescent" });
+  const [filters, setFilters] = useState({
+    bodyShape: "torpedo",
+    tailShape: "crescent",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
@@ -462,7 +530,10 @@ export default function UserDashboard() {
     success: "",
   });
   const [complaintEvidence, setComplaintEvidence] = useState([]);
-  const [complaintGuess, setComplaintGuess] = useState({ bodyShape: "", tailShape: "" });
+  const [complaintGuess, setComplaintGuess] = useState({
+    bodyShape: "",
+    tailShape: "",
+  });
   const [complaintForm, setComplaintForm] = useState({
     incidentType: INCIDENT_TYPES[0],
     description: "",
@@ -474,7 +545,8 @@ export default function UserDashboard() {
   const [identifyQuery, setIdentifyQuery] = useState("");
   const [identifyBodyShape, setIdentifyBodyShape] = useState("");
   const [identifyTailShape, setIdentifyTailShape] = useState("");
-  const [selectedIdentifySpeciesId, setSelectedIdentifySpeciesId] = useState("");
+  const [selectedIdentifySpeciesId, setSelectedIdentifySpeciesId] =
+    useState("");
   const [brokenIdentifyImages, setBrokenIdentifyImages] = useState({});
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -492,7 +564,10 @@ export default function UserDashboard() {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
         setIsProfileMenuOpen(false);
       }
     }
@@ -515,7 +590,9 @@ export default function UserDashboard() {
 
       if (token) {
         const reportsData = await fetchJson("/reports/my", token);
-        setReports(Array.isArray(reportsData?.reports) ? reportsData.reports : []);
+        setReports(
+          Array.isArray(reportsData?.reports) ? reportsData.reports : [],
+        );
       } else {
         setReports([]);
       }
@@ -537,7 +614,10 @@ export default function UserDashboard() {
       const params = new URLSearchParams(filters);
 
       try {
-        const data = await fetchJson(`/species/find?${params.toString()}`, token);
+        const data = await fetchJson(
+          `/species/find?${params.toString()}`,
+          token,
+        );
         if (!ignore) {
           setIdentifierResult(Array.isArray(data?.species) ? data.species : []);
         }
@@ -557,7 +637,7 @@ export default function UserDashboard() {
 
   const reportCount = reports.length;
   const underReviewCount = reports.filter((item) =>
-    ["Pending", "Under Review"].includes(item.status)
+    ["Pending", "Under Review"].includes(item.status),
   ).length;
 
   const identifiedSpeciesCount = useMemo(() => {
@@ -577,17 +657,22 @@ export default function UserDashboard() {
     () =>
       speciesCatalog
         .filter((item) =>
-          ["Protected", "Endangered", "Critically Endangered", "Banned"].includes(
-            item.protectionStatus
-          )
+          [
+            "Protected",
+            "Endangered",
+            "Critically Endangered",
+            "Banned",
+          ].includes(item.protectionStatus),
         )
         .slice(0, 3),
-    [speciesCatalog]
+    [speciesCatalog],
   );
 
   const last30DaysIncidents = useMemo(() => {
     const threshold = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return reports.filter((item) => new Date(item.createdAt).getTime() >= threshold).length;
+    return reports.filter(
+      (item) => new Date(item.createdAt).getTime() >= threshold,
+    ).length;
   }, [reports]);
 
   const topMatch = identifierResult[0];
@@ -602,10 +687,14 @@ export default function UserDashboard() {
         const itemBodyShape = normalizeSpeciesBodyShape(item.bodyShape);
         const itemTailShape = normalizeIdentifyShape(item.tailShape);
 
-        const bodyShapeMatch = selectedBodyShape ? itemBodyShape === selectedBodyShape : true;
+        const bodyShapeMatch = selectedBodyShape
+          ? itemBodyShape === selectedBodyShape
+          : true;
         if (!bodyShapeMatch) return false;
 
-        const tailShapeMatch = selectedTailShape ? itemTailShape === selectedTailShape : true;
+        const tailShapeMatch = selectedTailShape
+          ? itemTailShape === selectedTailShape
+          : true;
         if (!tailShapeMatch) return false;
         if (!query) return true;
 
@@ -619,13 +708,18 @@ export default function UserDashboard() {
   const identifyFilterSummary = useMemo(() => {
     const parts = [];
     if (identifyBodyShape) parts.push(`Body: ${identifyBodyShape}`);
-    if (identifyTailShape) parts.push(`Tail: ${toTitleCase(identifyTailShape)}`);
+    if (identifyTailShape)
+      parts.push(`Tail: ${toTitleCase(identifyTailShape)}`);
     return parts.join(" • ");
   }, [identifyBodyShape, identifyTailShape]);
 
   const selectedIdentifySpecies = useMemo(() => {
     if (!selectedIdentifySpeciesId) return null;
-    return identifyMatches.find((item) => toSpeciesKey(item) === selectedIdentifySpeciesId) || null;
+    return (
+      identifyMatches.find(
+        (item) => toSpeciesKey(item) === selectedIdentifySpeciesId,
+      ) || null
+    );
   }, [identifyMatches, selectedIdentifySpeciesId]);
 
   useEffect(() => {
@@ -635,7 +729,7 @@ export default function UserDashboard() {
     }
 
     const hasSelection = identifyMatches.some(
-      (item) => toSpeciesKey(item) === selectedIdentifySpeciesId
+      (item) => toSpeciesKey(item) === selectedIdentifySpeciesId,
     );
 
     if (!hasSelection) {
@@ -669,7 +763,9 @@ export default function UserDashboard() {
 
   const guessedSpeciesMatches = useMemo(() => {
     const byBody = complaintGuess.bodyShape
-      ? speciesCatalog.filter((item) => item.bodyShape === complaintGuess.bodyShape)
+      ? speciesCatalog.filter(
+          (item) => item.bodyShape === complaintGuess.bodyShape,
+        )
       : speciesCatalog;
 
     const byTail = complaintGuess.tailShape
@@ -692,6 +788,14 @@ export default function UserDashboard() {
     setActiveView("dashboard");
   };
 
+  const onViewMyReports = () => {
+    navigate("/my-reports");
+  };
+
+  const onViewReportForm = () => {
+    navigate("/report-form");
+  };
+
   const toggleProfileMenu = () => {
     setIsProfileMenuOpen((prev) => !prev);
   };
@@ -706,7 +810,15 @@ export default function UserDashboard() {
 
     setIsProfileMenuOpen(false);
 
-    const keys = ["token", "authToken", "accessToken", "jwt", "user", "userData", "role"];
+    const keys = [
+      "token",
+      "authToken",
+      "accessToken",
+      "jwt",
+      "user",
+      "userData",
+      "role",
+    ];
     keys.forEach((key) => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
@@ -754,7 +866,10 @@ export default function UserDashboard() {
 
   const setCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setComplaintStatus((prev) => ({ ...prev, error: "Geolocation is not available in this browser." }));
+      setComplaintStatus((prev) => ({
+        ...prev,
+        error: "Geolocation is not available in this browser.",
+      }));
       return;
     }
 
@@ -770,9 +885,10 @@ export default function UserDashboard() {
       () => {
         setComplaintStatus((prev) => ({
           ...prev,
-          error: "Unable to fetch your location. Please enter coordinates manually.",
+          error:
+            "Unable to fetch your location. Please enter coordinates manually.",
         }));
-      }
+      },
     );
   };
 
@@ -805,10 +921,16 @@ export default function UserDashboard() {
     formData.append("latitude", complaintForm.latitude.trim());
     formData.append("longitude", complaintForm.longitude.trim());
     if (complaintForm.incidentDate) {
-      formData.append("incidentDate", new Date(complaintForm.incidentDate).toISOString());
+      formData.append(
+        "incidentDate",
+        new Date(complaintForm.incidentDate).toISOString(),
+      );
     }
     if (complaintForm.speciesId) {
-      formData.append("speciesInvolved", JSON.stringify([complaintForm.speciesId]));
+      formData.append(
+        "speciesInvolved",
+        JSON.stringify([complaintForm.speciesId]),
+      );
     }
     complaintEvidence.forEach((file) => {
       formData.append("evidence", file);
@@ -881,6 +1003,8 @@ export default function UserDashboard() {
           last30DaysIncidents={last30DaysIncidents}
           onOpenComplaintModal={openComplaintModal}
           onOpenIdentifyView={openIdentifyView}
+          onViewMyReports={onViewMyReports}
+          onViewReportForm={onViewReportForm}
           isProfileMenuOpen={isProfileMenuOpen}
           onToggleProfileMenu={toggleProfileMenu}
           onViewProfile={handleViewProfile}
@@ -890,19 +1014,26 @@ export default function UserDashboard() {
       ) : null}
 
       {error ? <p className="error-banner">{error}</p> : null}
-      {complaintStatus.success ? <p className="success-banner">{complaintStatus.success}</p> : null}
+      {complaintStatus.success ? (
+        <p className="success-banner">{complaintStatus.success}</p>
+      ) : null}
 
       {activeView === "identify" ? (
         <section className="identify-shell card-reveal delay-2">
           <div className="section-head">
             <h2>Identify Species</h2>
-            <button className="inline-link" type="button" onClick={openDashboardView}>
+            <button
+              className="inline-link"
+              type="button"
+              onClick={openDashboardView}
+            >
               Back to dashboard →
             </button>
           </div>
 
           <p className="identify-note">
-            Search by fish name. If you are not sure, select body shape to narrow the results.
+            Search by fish name. If you are not sure, select body shape to
+            narrow the results.
           </p>
 
           <label className="identify-label" htmlFor="identify-search">
@@ -918,7 +1049,11 @@ export default function UserDashboard() {
           />
 
           {identifyQuery.trim() && identifySuggestions.length > 0 ? (
-            <div className="identify-suggestion-list" role="listbox" aria-label="Species suggestions">
+            <div
+              className="identify-suggestion-list"
+              role="listbox"
+              aria-label="Species suggestions"
+            >
               {identifySuggestions.map((item) => (
                 <button
                   key={`identify-suggestion-${item._id || item.id || item.name}`}
@@ -992,7 +1127,8 @@ export default function UserDashboard() {
                 </button>
               ))}
             </div>
-            {identifyTailShape === "rounded" && TAIL_SHAPE_REFERENCES.Rounded ? (
+            {identifyTailShape === "rounded" &&
+            TAIL_SHAPE_REFERENCES.Rounded ? (
               <div className="body-shape-reference">
                 <img
                   src={TAIL_SHAPE_REFERENCES.Rounded.image}
@@ -1004,7 +1140,8 @@ export default function UserDashboard() {
                 </p>
               </div>
             ) : null}
-            {identifyTailShape === "crescent" && TAIL_SHAPE_REFERENCES.Crescent ? (
+            {identifyTailShape === "crescent" &&
+            TAIL_SHAPE_REFERENCES.Crescent ? (
               <div className="body-shape-reference">
                 <img
                   src={TAIL_SHAPE_REFERENCES.Crescent.image}
@@ -1040,7 +1177,8 @@ export default function UserDashboard() {
                 </p>
               </div>
             ) : null}
-            {identifyTailShape === "pointed" && TAIL_SHAPE_REFERENCES.Pointed ? (
+            {identifyTailShape === "pointed" &&
+            TAIL_SHAPE_REFERENCES.Pointed ? (
               <div className="body-shape-reference">
                 <img
                   src={TAIL_SHAPE_REFERENCES.Pointed.image}
@@ -1061,42 +1199,64 @@ export default function UserDashboard() {
           ) : (
             <>
               {identifyFilterSummary ? (
-                <p className="identify-filter-summary">Showing species for {identifyFilterSummary}</p>
+                <p className="identify-filter-summary">
+                  Showing species for {identifyFilterSummary}
+                </p>
               ) : null}
-            <div className="identify-grid">
-              {identifyMatches.map((item) => (
-                <button
-                  key={item._id || item.id}
-                  type="button"
-                  className={`identify-card ${
-                    selectedIdentifySpeciesId === toSpeciesKey(item) ? "identify-card-active" : ""
-                  }`}
-                  onClick={() => setSelectedIdentifySpeciesId(toSpeciesKey(item))}
-                >
-                  {resolveSpeciesImageUrl(item) && !brokenIdentifyImages[toSpeciesKey(item)] ? (
-                    <img
-                      src={resolveSpeciesImageUrl(item)}
-                      alt={item.name ? `${item.name} reference` : "Species reference"}
-                      className="identify-species-image"
-                      onError={() => {
-                        const key = toSpeciesKey(item);
-                        setBrokenIdentifyImages((prev) => ({ ...prev, [key]: true }));
-                      }}
-                    />
-                  ) : (
-                    <div className="identify-species-image identify-species-image-fallback">No Image</div>
-                  )}
-                  <h3>{item.name}</h3>
-                  <p>{item.scientificName}</p>
-                  <div className="identify-meta-row">
-                    <span className="chip chip-blue">{formatBodyShapeLabel(item.bodyShape)}</span>
-                    <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
-                      {item.isFullyBanned ? "Banned" : item.protectionStatus || "Status unknown"}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+              <div className="identify-grid">
+                {identifyMatches.map((item) => (
+                  <button
+                    key={item._id || item.id}
+                    type="button"
+                    className={`identify-card ${
+                      selectedIdentifySpeciesId === toSpeciesKey(item)
+                        ? "identify-card-active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setSelectedIdentifySpeciesId(toSpeciesKey(item))
+                    }
+                  >
+                    {resolveSpeciesImageUrl(item) &&
+                    !brokenIdentifyImages[toSpeciesKey(item)] ? (
+                      <img
+                        src={resolveSpeciesImageUrl(item)}
+                        alt={
+                          item.name
+                            ? `${item.name} reference`
+                            : "Species reference"
+                        }
+                        className="identify-species-image"
+                        onError={() => {
+                          const key = toSpeciesKey(item);
+                          setBrokenIdentifyImages((prev) => ({
+                            ...prev,
+                            [key]: true,
+                          }));
+                        }}
+                      />
+                    ) : (
+                      <div className="identify-species-image identify-species-image-fallback">
+                        No Image
+                      </div>
+                    )}
+                    <h3>{item.name}</h3>
+                    <p>{item.scientificName}</p>
+                    <div className="identify-meta-row">
+                      <span className="chip chip-blue">
+                        {formatBodyShapeLabel(item.bodyShape)}
+                      </span>
+                      <span
+                        className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}
+                      >
+                        {item.isFullyBanned
+                          ? "Banned"
+                          : item.protectionStatus || "Status unknown"}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </>
           )}
 
@@ -1114,7 +1274,10 @@ export default function UserDashboard() {
                   className="identify-detail-image"
                   onError={() => {
                     const key = toSpeciesKey(selectedIdentifySpecies);
-                    setBrokenIdentifyImages((prev) => ({ ...prev, [key]: true }));
+                    setBrokenIdentifyImages((prev) => ({
+                      ...prev,
+                      [key]: true,
+                    }));
                   }}
                 />
               ) : null}
@@ -1126,11 +1289,14 @@ export default function UserDashboard() {
                 >
                   {selectedIdentifySpecies.isFullyBanned
                     ? "Fully Banned"
-                    : selectedIdentifySpecies.protectionStatus || "Status unknown"}
+                    : selectedIdentifySpecies.protectionStatus ||
+                      "Status unknown"}
                 </span>
               </div>
 
-              <p className="identify-scientific-name">{selectedIdentifySpecies.scientificName}</p>
+              <p className="identify-scientific-name">
+                {selectedIdentifySpecies.scientificName}
+              </p>
 
               <div className="identify-detail-grid">
                 <p>
@@ -1144,10 +1310,12 @@ export default function UserDashboard() {
                     : "Unknown"}
                 </p>
                 <p>
-                  <strong>Fin Type:</strong> {selectedIdentifySpecies.finType || "Not specified"}
+                  <strong>Fin Type:</strong>{" "}
+                  {selectedIdentifySpecies.finType || "Not specified"}
                 </p>
                 <p>
-                  <strong>Color Pattern:</strong> {selectedIdentifySpecies.colorPattern || "Not specified"}
+                  <strong>Color Pattern:</strong>{" "}
+                  {selectedIdentifySpecies.colorPattern || "Not specified"}
                 </p>
                 <p>
                   <strong>Legal Min Size:</strong>{" "}
@@ -1156,17 +1324,20 @@ export default function UserDashboard() {
                     : "Not specified"}
                 </p>
                 <p>
-                  <strong>Legal Season:</strong> {formatMonthRange(selectedIdentifySpecies.legalSeason)}
+                  <strong>Legal Season:</strong>{" "}
+                  {formatMonthRange(selectedIdentifySpecies.legalSeason)}
                 </p>
                 <p className="identify-detail-full">
                   <strong>Regions:</strong>{" "}
-                  {Array.isArray(selectedIdentifySpecies.regions) && selectedIdentifySpecies.regions.length > 0
+                  {Array.isArray(selectedIdentifySpecies.regions) &&
+                  selectedIdentifySpecies.regions.length > 0
                     ? selectedIdentifySpecies.regions.join(", ")
                     : "Not specified"}
                 </p>
                 <p className="identify-detail-full">
                   <strong>Description:</strong>{" "}
-                  {selectedIdentifySpecies.description?.trim() || "No description available."}
+                  {selectedIdentifySpecies.description?.trim() ||
+                    "No description available."}
                 </p>
               </div>
             </article>
@@ -1175,11 +1346,19 @@ export default function UserDashboard() {
       ) : null}
 
       {activeView === "dashboard" && isComplaintOpen ? (
-        <section className="report-form-panel card-reveal" role="region" aria-label="Create illegal fish report">
+        <section
+          className="report-form-panel card-reveal"
+          role="region"
+          aria-label="Create illegal fish report"
+        >
           <div className="complaint-modal complaint-modal-inline">
             <div className="modal-header">
               <h2>Create Illegal Fish Report</h2>
-              <button className="modal-close" type="button" onClick={closeComplaintModal}>
+              <button
+                className="modal-close"
+                type="button"
+                onClick={closeComplaintModal}
+              >
                 Cancel
               </button>
             </div>
@@ -1189,7 +1368,9 @@ export default function UserDashboard() {
                 Incident Type
                 <select
                   value={complaintForm.incidentType}
-                  onChange={(e) => updateComplaintField("incidentType", e.target.value)}
+                  onChange={(e) =>
+                    updateComplaintField("incidentType", e.target.value)
+                  }
                 >
                   {INCIDENT_TYPES.map((type) => (
                     <option key={type} value={type}>
@@ -1206,7 +1387,9 @@ export default function UserDashboard() {
                   minLength={20}
                   placeholder="Describe what happened, vessel type, time, and severity..."
                   value={complaintForm.description}
-                  onChange={(e) => updateComplaintField("description", e.target.value)}
+                  onChange={(e) =>
+                    updateComplaintField("description", e.target.value)
+                  }
                   required
                 />
               </label>
@@ -1219,7 +1402,9 @@ export default function UserDashboard() {
                     step="any"
                     placeholder="6.9271"
                     value={complaintForm.latitude}
-                    onChange={(e) => updateComplaintField("latitude", e.target.value)}
+                    onChange={(e) =>
+                      updateComplaintField("latitude", e.target.value)
+                    }
                     required
                   />
                 </label>
@@ -1231,7 +1416,9 @@ export default function UserDashboard() {
                     step="any"
                     placeholder="79.8612"
                     value={complaintForm.longitude}
-                    onChange={(e) => updateComplaintField("longitude", e.target.value)}
+                    onChange={(e) =>
+                      updateComplaintField("longitude", e.target.value)
+                    }
                     required
                   />
                 </label>
@@ -1243,7 +1430,9 @@ export default function UserDashboard() {
                   <input
                     type="datetime-local"
                     value={complaintForm.incidentDate}
-                    onChange={(e) => updateComplaintField("incidentDate", e.target.value)}
+                    onChange={(e) =>
+                      updateComplaintField("incidentDate", e.target.value)
+                    }
                   />
                 </label>
 
@@ -1251,11 +1440,16 @@ export default function UserDashboard() {
                   Species (optional)
                   <select
                     value={complaintForm.speciesId}
-                    onChange={(e) => updateComplaintField("speciesId", e.target.value)}
+                    onChange={(e) =>
+                      updateComplaintField("speciesId", e.target.value)
+                    }
                   >
                     <option value="">Not sure</option>
                     {speciesCatalog.map((item) => (
-                      <option key={item._id || item.id} value={item._id || item.id}>
+                      <option
+                        key={item._id || item.id}
+                        value={item._id || item.id}
+                      >
                         {item.name}
                       </option>
                     ))}
@@ -1265,7 +1459,10 @@ export default function UserDashboard() {
 
               <section className="species-helper">
                 <h3>Not sure which species?</h3>
-                <p>Use body shape and tail shape to find likely species, then select one.</p>
+                <p>
+                  Use body shape and tail shape to find likely species, then
+                  select one.
+                </p>
 
                 <div className="helper-filter-block">
                   <span>Body shape</span>
@@ -1301,16 +1498,24 @@ export default function UserDashboard() {
 
                 <div className="helper-results">
                   {guessedSpeciesMatches.length === 0 ? (
-                    <p className="file-hint">No species matches for this shape combination.</p>
+                    <p className="file-hint">
+                      No species matches for this shape combination.
+                    </p>
                   ) : (
                     guessedSpeciesMatches.map((item) => {
-                      const selected = complaintForm.speciesId === (item._id || item.id);
+                      const selected =
+                        complaintForm.speciesId === (item._id || item.id);
                       return (
                         <button
                           key={item._id || item.id}
                           type="button"
                           className={`guess-item ${selected ? "guess-item-selected" : ""}`}
-                          onClick={() => updateComplaintField("speciesId", item._id || item.id)}
+                          onClick={() =>
+                            updateComplaintField(
+                              "speciesId",
+                              item._id || item.id,
+                            )
+                          }
                         >
                           <strong>{item.name}</strong>
                           <span>{item.scientificName}</span>
@@ -1332,18 +1537,31 @@ export default function UserDashboard() {
               </label>
 
               {complaintEvidence.length > 0 ? (
-                <p className="file-hint">Selected: {complaintEvidence.map((file) => file.name).join(", ")}</p>
+                <p className="file-hint">
+                  Selected:{" "}
+                  {complaintEvidence.map((file) => file.name).join(", ")}
+                </p>
               ) : (
                 <p className="file-hint">No evidence selected.</p>
               )}
 
-              {complaintStatus.error ? <p className="form-error">{complaintStatus.error}</p> : null}
+              {complaintStatus.error ? (
+                <p className="form-error">{complaintStatus.error}</p>
+              ) : null}
 
               <div className="form-actions">
-                <button type="button" className="ghost-btn" onClick={setCurrentLocation}>
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={setCurrentLocation}
+                >
                   Use My Location
                 </button>
-                <button type="submit" className="solid-btn" disabled={complaintStatus.loading}>
+                <button
+                  type="submit"
+                  className="solid-btn"
+                  disabled={complaintStatus.loading}
+                >
                   {complaintStatus.loading ? "Submitting..." : "Submit Report"}
                 </button>
               </div>
