@@ -18,8 +18,9 @@ import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSpeciesManagement from "./pages/AdminSpeciesManagement";
 import CaseManagement from "./pages/CaseManagement";
-import AdminRoute from "./components/AdminRoute";
 import AdminReports from "./pages/AdminReports";
+import ManageUsersDashboard from "./pages/ManageUsersDashboard"; // ✅ ADD THIS IMPORT
+import AdminRoute from "./components/AdminRoute";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -96,11 +97,14 @@ function AnimatedRoutes() {
           }
         />
 
+        {/* ✅ FIXED: Single User Management Route - PROPERLY PROTECTED */}
         <Route
           path="/admin/users"
           element={
             <AdminRoute>
-              <div className="p-4">User Management Coming Soon...</div>
+              <PageTransition>
+                <ManageUsersDashboard />
+              </PageTransition>
             </AdminRoute>
           }
         />

@@ -15,7 +15,7 @@ import {
 import authenticateUser from "../middlewares/authentication.js";
 import { createUserValidation, loginValidation, forgotPasswordValidation, resetPasswordValidation, updateProfileValidation, validate } from "../middlewares/userValidation.js";
 import { isAdmin } from "../controllers/userController.js";
-
+import uploadProfile from "../middlewares/uploadProfile.js";
 const userRouter = express.Router();
 
 userRouter.post("/", createUserValidation, validate, createUser)
@@ -27,6 +27,7 @@ userRouter.post("/logout", authenticateUser, logoutUser)
 userRouter.post("/forgot-password", forgotPasswordValidation, validate, forgotPassword)
 userRouter.post("/reset-password", resetPasswordValidation, validate, resetPassword)
 userRouter.get("/search", authenticateUser, isAdmin, searchUser);
+userRouter.put("/me", authenticateUser, uploadProfile.single("image"), updateMyProfile);
 userRouter.get("/session-test", (req, res) => {
     if (req.session && req.session.user) {
         res.json({
