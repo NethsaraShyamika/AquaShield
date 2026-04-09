@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import LeafletMap from "../components/LeafletMap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -11,39 +12,6 @@ const INCIDENT_TYPES = [
   "Catching Protected Species",
   "Night Fishing Violation",
   "Other",
-];
-
-const MAP_STYLES = [
-  { elementType: "geometry", stylers: [{ color: "#041828" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#0a1628" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#4e6d70" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#304a7d" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#255763" }],
-  },
-  {
-    featureType: "administrative",
-    elementType: "geometry",
-    stylers: [{ color: "#17263c" }],
-  },
-  { featureType: "landscape", stylers: [{ color: "#062030" }] },
-  { featureType: "poi", stylers: [{ color: "#062030" }] },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,133 +69,11 @@ function FieldLabel({ children, required, hint }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MapPicker — Google Maps click-to-pin location selector
+// CoordinatesDisplay — shows lat/lng below the map
 // ─────────────────────────────────────────────────────────────────────────────
-function MapPicker({ lat, lng, onChange }) {
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const instanceRef = useRef(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (window.google?.maps) {
-      setReady(true);
-      return;
-    }
-    if (document.getElementById("gmap-script")) {
-      const iv = setInterval(() => {
-        if (window.google?.maps) {
-          setReady(true);
-          clearInterval(iv);
-        }
-      }, 100);
-      return () => clearInterval(iv);
-    }
-    const s = document.createElement("script");
-    // ⚠️  Replace YOUR_GOOGLE_MAPS_API_KEY below
-    s.src =
-      "https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY";
-    s.id = "gmap-script";
-    s.async = true;
-    s.onload = () => setReady(true);
-    document.head.appendChild(s);
-  }, []);
-
-  useEffect(() => {
-    if (!ready || !mapRef.current || instanceRef.current) return;
-
-    const center = lat && lng ? { lat, lng } : { lat: 7.8731, lng: 80.7718 };
-
-    const map = new window.google.maps.Map(mapRef.current, {
-      center,
-      zoom: lat && lng ? 10 : 6,
-      styles: MAP_STYLES,
-      zoomControl: true,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true,
-    });
-
-    instanceRef.current = map;
-
-    const placeMarker = (latLng) => {
-      if (markerRef.current) {
-        markerRef.current.setPosition(latLng);
-      } else {
-        markerRef.current = new window.google.maps.Marker({
-          position: latLng,
-          map,
-          draggable: true,
-          animation: window.google.maps.Animation.DROP,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            fillColor: "#06b6d4",
-            fillOpacity: 1,
-            strokeColor: "#fff",
-            strokeWeight: 2,
-            scale: 10,
-          },
-        });
-        markerRef.current.addListener("dragend", (ev) =>
-          onChange(ev.latLng.lat(), ev.latLng.lng()),
-        );
-      }
-      onChange(latLng.lat(), latLng.lng());
-    };
-
-    if (lat && lng) placeMarker(new window.google.maps.LatLng(lat, lng));
-    map.addListener("click", (e) => placeMarker(e.latLng));
-  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
-
+function CoordinatesDisplay({ lat, lng }) {
   return (
-    <div>
-      <div
-        style={{
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <div ref={mapRef} style={{ width: "100%", height: 280 }}>
-          {!ready && (
-            <div
-              style={{
-                height: 280,
-                background: "rgba(255,255,255,0.03)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-              }}
-            >
-              <svg
-                width="40"
-                height="40"
-                fill="none"
-                stroke="rgba(6,182,212,0.5)"
-                strokeWidth="1.5"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
-                Loading map…
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
+    <>
       <div
         style={{
           display: "grid",
@@ -287,7 +133,7 @@ function MapPicker({ lat, lng, onChange }) {
           position.
         </p>
       )}
-    </div>
+    </>
   );
 }
 
@@ -568,11 +414,8 @@ export default function ReportForm() {
 
       if (form.incidentDate) data.append("incidentDate", form.incidentDate);
 
-      // Send each species _id separately so the server can parse the array
       selectedSpecies.forEach((s) => data.append("speciesInvolved[]", s._id));
 
-      // Evidence files — server should respond with { url, fileType, originalName }
-      // per evidence item and build the evidence array before saving the report
       files.forEach((f) => data.append("evidence", f));
 
       const res = await fetch("/api/reports", {
@@ -810,22 +653,38 @@ export default function ReportForm() {
               />
             </div>
 
-            {/* Location — Google Maps */}
+            {/* Location — Leaflet Map */}
             <div>
               <FieldLabel required hint="click the map to drop a pin">
                 Incident Location
               </FieldLabel>
-              <MapPicker
-                lat={form.latitude}
-                lng={form.longitude}
-                onChange={(lat, lng) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    latitude: lat,
-                    longitude: lng,
-                  }))
-                }
-              />
+
+              {/* Wrapper gives the map a border matching the rest of the form */}
+              <div
+                style={{
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  // z-index context so Leaflet controls don't bleed over dropdowns
+                  position: "relative",
+                  zIndex: 0,
+                }}
+              >
+                <LeafletMap
+                  lat={form.latitude}
+                  lng={form.longitude}
+                  onChange={(lat, lng) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      latitude: lat,
+                      longitude: lng,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Coordinate readout sits outside the map wrapper */}
+              <CoordinatesDisplay lat={form.latitude} lng={form.longitude} />
             </div>
 
             {/* Species Involved */}
@@ -1108,7 +967,6 @@ export default function ReportForm() {
           </form>
         </div>
       </div>
-      
     </div>
   );
 }
