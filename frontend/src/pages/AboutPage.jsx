@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 import reportingImg from "../assets/images/reporting.jpg";
 import fishingImg from "../assets/images/fish.jpg";
 import firewingImg from "../assets/images/firewing.jpg";
 import { motion } from "framer-motion";
+import policereportImg from "../assets/images/policereporting.webp";
 
 const navLinks = ["Home", "About", "Services", "Contact"];
 
@@ -159,6 +160,106 @@ const OceanBackground = () => (
   </div>
 );
 
+// Image Carousel Component for About Page Hero
+const aboutCarouselImages = [
+  {
+    url: "https://images.unsplash.com/photo-1771765302248-9b733668780f?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Stop Illegal Fishing",
+    sub: "Together we can end poaching 🎣",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1539607436488-73c6c32e6dc2?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Protect All Species",
+    sub: "From oceans to rivers, every species matters 🐠",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1712331640584-035a22fb70a9?q=80&w=1125&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Fight Illegal Fishing",
+    sub: "Report. Protect. Preserve. ⚓",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1748650337213-2d206688a968?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Save Endangered Species",
+    sub: "Protecting aquatic life worldwide 🐟",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Guard Our Waters",
+    sub: "Stop poaching, save species 🌊",
+  },
+];
+
+const AboutImageCarousel = () => {
+  const [current, setCurrent] = useState(0);
+
+  // Auto advance every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % aboutCarouselImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const goTo = (index) => setCurrent(index);
+  const prev = () => setCurrent((current - 1 + aboutCarouselImages.length) % aboutCarouselImages.length);
+  const next = () => setCurrent((current + 1) % aboutCarouselImages.length);
+
+  return (
+    <div className="relative mx-auto max-w-4xl rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 h-72 md:h-96">
+      {/* Images */}
+      {aboutCarouselImages.map((img, i) => (
+        <div
+          key={i}
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{ opacity: i === current ? 1 : 0 }}
+        >
+          <img src={img.url} alt={img.title} className="w-full h-full object-cover" />
+          
+          {/* Stronger gradient overlay for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          
+          {/* Text with background for guaranteed readability - bottom aligned */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+            <p className="text-white font-bold text-lg md:text-xl mb-1">{img.title}</p>
+            <p className="text-white/80 text-sm md:text-base">{img.sub}</p>
+          </div>
+        </div>
+      ))}
+
+      {/* Left arrow */}
+      <button
+        onClick={prev}
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white text-lg transition-all z-10 hover:scale-110 backdrop-blur-sm"
+      >
+        ‹
+      </button>
+
+      {/* Right arrow */}
+      <button
+        onClick={next}
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white text-lg transition-all z-10 hover:scale-110 backdrop-blur-sm"
+      >
+        ›
+      </button>
+
+      {/* Dot navigation */}
+      <div className="absolute bottom-3 right-4 flex gap-1.5 z-10">
+        {aboutCarouselImages.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === current
+                ? "w-5 h-1.5 bg-cyan-400"
+                : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Team member data
 const team = [
   {
@@ -202,19 +303,16 @@ const stats = [
 // Mission cards
 const missions = [
   {
-    
     title: "Stop Illegal Fishing",
     desc: "We empower communities to report illegal fishing activities in real time, creating a global network of ocean protectors.",
     img: reportingImg,
   },
   {
-   
     title: "Protect Marine Life",
     desc: "Our species database helps identify and track endangered marine life, ensuring they are protected from exploitation.",
     img: fishingImg,
   },
   {
-   
     title: "Preserve Our Oceans",
     desc: "Through data-driven insights and community action, we work to preserve ocean ecosystems for future generations.",
     img: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&q=80",
@@ -231,7 +329,7 @@ export default function AboutPage() {
 
       <div className="relative z-10">
 
-        {/* ── HERO SECTION ── */}
+        {/* ── HERO SECTION WITH CAROUSEL ── */}
         <section className="pt-36 pb-20 px-6 md:px-16 text-center">
           <div className="max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5 text-cyan-300 text-xs font-medium mb-6">
@@ -244,19 +342,8 @@ export default function AboutPage() {
             <p className="text-white/40 text-lg leading-relaxed max-w-xl mx-auto mb-10">
               Born from a passion for ocean conservation, we built a platform that turns every citizen into an ocean guardian. Together, we fight illegal fishing one report at a time.
             </p>
-            {/* Hero image */}
-            <div className="relative mx-auto max-w-4xl rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
-              <img
-                src= "https://images.unsplash.com/photo-1682687981907-170c006e3744?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="Ocean conservation"
-                className="w-full h-72 md:h-96 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#020e1f] via-transparent to-transparent" />
-              <div className="absolute bottom-6 left-8 text-left">
-                <p className="text-white/60 text-sm">Pacific Ocean, 2024</p>
-                <p className="text-white font-semibold">Protecting what matters most 🌊</p>
-              </div>
-            </div>
+            {/* Carousel replacing static image */}
+            <AboutImageCarousel />
           </div>
         </section>
 
@@ -293,7 +380,6 @@ export default function AboutPage() {
                   <div className="relative h-48 overflow-hidden">
                     <img src={m.img} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#020e1f] via-[#020e1f]/40 to-transparent" />
-                    <div className="absolute top-4 left-4 text-3xl">{m.icon}</div>
                   </div>
                   {/* Content */}
                   <div className="p-6">
