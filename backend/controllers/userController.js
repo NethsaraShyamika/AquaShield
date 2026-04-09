@@ -1,7 +1,7 @@
 import User from "../models/user.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { sendWelcomeEmail ,sendOtpEmail, sendPasswordResetSuccessEmail} from "../utils/sendEmail.js";
+import { sendWelcomeEmail, sendOtpEmail, sendPasswordResetSuccessEmail } from "../utils/sendEmail.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "icomputers";
 
@@ -108,16 +108,22 @@ export async function getAllUsers(req, res) {
 
 export async function updateMyProfile(req, res) {
   try {
-    const userId = req.user.id; // ✅ Logged-in user ID from JWT
+    const userId = req.user.id;
 
-    const { email, firstName, lastName, password, image } = req.body;
+    const { email, firstName, lastName, password } = req.body;
 
     const updateData = {};
 
     if (email) updateData.email = email;
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
-    if (image) updateData.image = image;
+
+    // ✅ Handle uploaded image file from multer
+    if (req.file) {
+      updateData.image = `/uploads/profiles/${req.file.filename}`;
+    } else if (req.body.image) {
+      updateData.image = req.body.image;
+    }
 
     // ✅ If user changes password
     if (password) {
@@ -125,23 +131,26 @@ export async function updateMyProfile(req, res) {
       updateData.password = hashedPassword;
     }
 
-    // ❌ Block users from hacking admin fields
+    // ❌ Block users from changing system fields
     if (req.body.isAdmin || req.body.isBlocked) {
-      return res.status(403).json({
-        message: "You cannot change system fields"
-      });
+      return res.status(403).json({ message: "You cannot change system fields" });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true }
-    ).select("-password"); // hide password
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
 
-    res.json({
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
+    // ✅ Generate NEW token with updated data
+    const newToken = jwt.sign({
+      id: updatedUser._id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      isAdmin: updatedUser.isAdmin,
+      isBlocked: updatedUser.isBlocked,
+      image: updatedUser.image,
+      uid: updatedUser.uid,
+    }, JWT_SECRET, { expiresIn: "48h" });
+
+    res.json({ message: "Profile updated successfully", user: updatedUser, token: newToken });
 
   } catch (error) {
     console.log(error);

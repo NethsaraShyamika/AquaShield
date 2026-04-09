@@ -156,24 +156,24 @@ export default function AuthPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
-      
+
       // ✅ Store token if backend returns one
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
-      
+
       // ✅ Store user info
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
-      
+
       showToast("Welcome back! Login successful 🌊", "success");
-      
+
       // ✅ Redirect to dashboard
       setTimeout(() => {
         navigate('/dashboard');
       }, 1000);
-      
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -185,26 +185,40 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/users",  {
+      // ✅ Step 1 — Create account
+      const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Signup failed");
-      
-      // ✅ Store token after signup
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+
+      showToast("Account created! Logging you in... 🌊", "success");
+
+      // ✅ Step 2 — Auto login with same credentials
+      const loginRes = await fetch("/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) throw new Error(loginData.message || "Auto login failed");
+
+      // ✅ Step 3 — Store token
+      if (loginData.token) {
+        localStorage.setItem("token", loginData.token);
       }
-      
-      showToast("Account created! Welcome to AquaShield 🌊", "success");
-      
-      // ✅ Redirect to dashboard after signup
+
+      // ✅ Step 4 — Redirect directly to user dashboard
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate("/user-dashboard");
       }, 1000);
-      
+
     } catch (err) {
       setError(err.message);
     } finally {

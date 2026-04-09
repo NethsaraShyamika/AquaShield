@@ -46,6 +46,8 @@ app.use("/api/users", userRouter);
 
 app.use("/api/reports", reportRoutes);
 
+app.use("/uploads", express.static("uploads"));
+
 const connectWithRetry = (retries = 5, delay = 5000) => {
   mongoose.connect(process.env.MONGO_URI)
     .then(() => {
