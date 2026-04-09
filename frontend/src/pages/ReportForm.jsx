@@ -404,13 +404,8 @@ export default function ReportForm() {
       data.append("description", form.description);
 
       // GeoJSON — MongoDB stores coordinates as [longitude, latitude]
-      data.append(
-        "location",
-        JSON.stringify({
-          type: "Point",
-          coordinates: [form.longitude, form.latitude],
-        }),
-      );
+      data.append("latitude", form.latitude);
+      data.append("longitude", form.longitude);
 
       if (form.incidentDate) data.append("incidentDate", form.incidentDate);
 
