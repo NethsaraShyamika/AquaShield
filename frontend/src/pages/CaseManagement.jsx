@@ -1,14 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// CaseManagement.jsx — AquaShield Admin Panel
-// Matches AdminSpeciesManagement UI style exactly:
-//   ✅ Same sidebar, layout, glass card aesthetic
-//   ✅ Action bar: View | Edit | Delete (inline text buttons)
-//   ✅ Create case modal with report dropdown
-//   ✅ Location shows readable address via OpenStreetMap reverse geocoding
-//   ✅ Robust API response unwrapping
-//   ✅ Stats cards, search, pagination
-// ─────────────────────────────────────────────────────────────
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,10 +6,10 @@ import {
   Eye, Pencil, Trash2, AlertCircle, Scale, CheckCircle,
   Shield, MapPin, Loader2, RefreshCw, Hash, ClipboardList,
   Lock, Gavel, CircleDot, XCircle, AlertTriangle, ChevronDown,
-  GitCommit, Zap, Activity,
+  GitCommit, Zap, Activity, Filter, X,
 } from "lucide-react";
 
-// ─── CONFIG ──────────────────────────────────────────────────
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 function getToken() { return localStorage.getItem("token"); }
@@ -30,7 +19,7 @@ const authHeader = () => ({
   ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
 });
 
-// ─── PALETTE — matches AdminSpeciesManagement exactly ─────────
+// COLOUR PALETTE — mirrors AdminSpeciesManagement exactly
 const P = {
   oceanBase:  "#020e1f",
   oceanMid:   "#041828",
@@ -49,7 +38,7 @@ const P = {
   divider:    "rgba(255,255,255,0.05)",
 };
 
-// ─── NAV ─────────────────────────────────────────────────────
+//  SIDEBAR NAV ITEMS 
 const NAV = [
   { id:"dashboard", label:"Dashboard",          icon:LayoutDashboard, path:"/admin/dashboard" },
   { id:"users",     label:"User Management",    icon:Users,           path:"/admin/users"     },
@@ -59,7 +48,7 @@ const NAV = [
   { id:"settings",  label:"Settings",           icon:Settings,        path:"/admin/settings"  },
 ];
 
-// ─── CONSTANTS ────────────────────────────────────────────────
+//  STATUS CONFIG — label, icon, colour per status value
 const STATUS_META = {
   OPEN:                 { label:"Open",             icon:CircleDot,   color:"#22d3ee", bg:"rgba(34,211,238,0.12)",  border:"rgba(34,211,238,0.28)"  },
   UNDER_INVESTIGATION:  { label:"Investigating",    icon:Search,      color:"#fbbf24", bg:"rgba(251,191,36,0.12)",  border:"rgba(251,191,36,0.28)"  },
@@ -68,19 +57,26 @@ const STATUS_META = {
   CLOSED:               { label:"Closed",           icon:CheckCircle, color:"#34d399", bg:"rgba(52,211,153,0.12)",  border:"rgba(52,211,153,0.28)"  },
   REJECTED:             { label:"Rejected",         icon:XCircle,     color:"#f87171", bg:"rgba(248,113,113,0.12)", border:"rgba(248,113,113,0.28)" },
 };
+
+// PRIORITY CONFIG — colour per priority level
 const PRIORITY_META = {
   HIGH:   { color:"#f87171", bg:"rgba(248,113,113,0.12)" },
   MEDIUM: { color:"#fbbf24", bg:"rgba(251,191,36,0.12)"  },
   LOW:    { color:"#34d399", bg:"rgba(52,211,153,0.12)"  },
 };
-const STATUS_FLOW = ["OPEN","UNDER_INVESTIGATION","LEGAL_ACTION_STARTED","COURT_PROCEEDING","CLOSED"];
-const STATUSES    = Object.keys(STATUS_META);
-const PRIORITIES  = ["HIGH","MEDIUM","LOW"];
-const PER_PAGE    = 8;
 
-// ─── HELPERS ─────────────────────────────────────────────────
+// Order of case progression used to build the timeline
+const STATUS_FLOW = ["OPEN","UNDER_INVESTIGATION","LEGAL_ACTION_STARTED","COURT_PROCEEDING","CLOSED"];
+const STATUSES    = Object.keys(STATUS_META); // all status keys for dropdowns
+const PRIORITIES  = ["HIGH","MEDIUM","LOW"];
+const PER_PAGE    = 8; // rows per table page
+
+//  DATE / TIME HELPERS 
+// Short date e.g. "12 Jun 2024"
 const fmtDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+// Full date+time e.g. "12 Jun 2024, 14:30"
 const fmtDateTime = d => d ? new Date(d).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "—";
+// Human-readable relative time e.g. "3h ago"
 const timeAgo = d => {
   if (!d) return "—";
   const s = Math.floor((Date.now()-new Date(d))/1000);
@@ -88,6 +84,9 @@ const timeAgo = d => {
   if (s<86400) return `${Math.floor(s/3600)}h ago`; if (s<2592000) return `${Math.floor(s/86400)}d ago`;
   return fmtDate(d);
 };
+
+// Safely extracts an array from any backend response shape:
+// handles plain [], { data:[] }, { cases:[] }, { results:[] } etc.
 const extractArray = (res, hints=[]) => {
   if (Array.isArray(res)) return res;
   if (res && typeof res==="object") {
@@ -96,32 +95,37 @@ const extractArray = (res, hints=[]) => {
   }
   return null;
 };
+
+// Extracts {lat, lng} from GeoJSON, flat object, or top-level fields
 function extractCoords(r) {
   const c = r?.location?.coordinates;
-  if (c?.length===2) return {lat:c[1],lng:c[0]};
+  if (c?.length===2) return {lat:c[1],lng:c[0]};             // GeoJSON [lng, lat]
   if (r?.location?.latitude!=null) return {lat:r.location.latitude,lng:r.location.longitude};
   if (r?.latitude!=null)           return {lat:r.latitude,lng:r.longitude};
   return null;
 }
 
-// ─── REVERSE GEOCODE (OpenStreetMap Nominatim — free, no key) ─
+// REVERSE GEOCODING 
+// Converts GPS coordinates into a readable city/country string
 const _geocache = {};
 async function reverseGeocode(lat, lng) {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
-  if (_geocache[key]) return _geocache[key];
+  if (_geocache[key]) return _geocache[key]; // return cached result
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
       {headers:{"Accept-Language":"en","User-Agent":"AquaShield/1.0"}});
     const d = await r.json();
     const a = d.address||{};
+    // Build short label: "City, Country" or "State, Country"
     const parts = [a.city||a.town||a.village||a.county,a.state,a.country].filter(Boolean);
     const label = parts.slice(0,2).join(", ") || d.display_name?.split(",").slice(0,2).join(",").trim() || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     _geocache[key] = label;
     return label;
-  } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
+  } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; } // fallback to raw coords
 }
 
-// ─── API ─────────────────────────────────────────────────────
+//  API CALLS 
+// All requests include the JWT token via authHeader()
 const api = {
   getCases:   ()      => fetch(`${API_BASE}/cases`,       {headers:authHeader()}).then(r=>r.json()),
   getReports: ()      => fetch(`${API_BASE}/reports`,     {headers:authHeader()}).then(r=>r.json()),
@@ -130,33 +134,43 @@ const api = {
   deleteCase: id      => fetch(`${API_BASE}/cases/${id}`, {method:"DELETE",headers:authHeader()}).then(r=>r.json()),
 };
 
-// ─── SHARED STYLES ───────────────────────────────────────────
+// SHARED FORM STYLES 
+// Reused across CreateModal and EditModal inputs/selects
 const iS = {width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${P.border}`,outline:"none",background:"rgba(255,255,255,0.06)",color:P.text,fontSize:14};
 const lS = {display:"block",fontSize:12,fontWeight:700,color:"rgba(34,211,238,0.8)",marginBottom:8};
 
-// ─── BADGES ──────────────────────────────────────────────────
+//  STATUS BADGE 
+// Coloured pill shown in the table and detail view
 function StatusBadge({status}) {
   const m=STATUS_META[status]; if(!m) return null; const Icon=m.icon;
   return <span style={{background:m.bg,border:`1px solid ${m.border}`,color:m.color,borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,display:"inline-flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}><Icon size={9}/>{m.label}</span>;
 }
+
+//  PRIORITY BADGE 
+// Dot + label pill indicating case urgency
 function PriorityBadge({priority}) {
   const m=PRIORITY_META[priority]; if(!m) return null;
   return <span style={{background:m.bg,color:m.color,borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:m.color,flexShrink:0}}/>{priority}</span>;
 }
 
-// ─── TIMELINE ────────────────────────────────────────────────
+//CASE TIMELINE 
+// Builds a chronological activity log from the case's current status,
+
 function CaseTimeline({c}) {
   const evs=[];
+  // Always start with case creation
   evs.push({date:c.createdAt,label:"Case Opened",detail:`Case ${c.caseNumber} created`,color:"#22d3ee",icon:Briefcase});
   const idx=STATUS_FLOW.indexOf(c.status);
+  // Add events for each status stage the case has reached
   if(idx>=1) evs.push({date:c.updatedAt||c.createdAt,label:"Under Investigation",detail:c.assignedOfficer?`Assigned to ${c.assignedOfficer}`:"Investigation started",color:"#fbbf24",icon:Search});
   if(idx>=2) evs.push({date:c.updatedAt||c.createdAt,label:"Legal Action",detail:c.legalAction?.courtName?`Filed at ${c.legalAction.courtName}`:"Legal proceedings initiated",color:"#a78bfa",icon:Scale});
   if(idx>=3) evs.push({date:c.legalAction?.courtDate||c.updatedAt,label:"Court Proceeding",detail:c.legalAction?.courtDate?`Hearing: ${fmtDate(c.legalAction.courtDate)}`:"Court began",color:"#f472b6",icon:Gavel});
   if(c.status==="CLOSED")   evs.push({date:c.updatedAt,label:"Case Closed",  detail:c.legalAction?.fineAmount?`Fine: LKR ${Number(c.legalAction.fineAmount).toLocaleString()}`:"Resolved",color:"#34d399",icon:CheckCircle});
   if(c.status==="REJECTED") evs.push({date:c.updatedAt,label:"Case Rejected",detail:"Case was rejected",color:"#f87171",icon:XCircle});
+  // Additional legal events if present
   if(c.legalAction?.fineAmount&&c.status!=="CLOSED") evs.push({date:c.updatedAt,label:"Fine Issued",    detail:`LKR ${Number(c.legalAction.fineAmount).toLocaleString()}`,color:"#fb923c",icon:Zap});
   if(c.legalAction?.jailDuration) evs.push({date:c.updatedAt,label:"Detention Order",detail:c.legalAction.jailDuration,color:"#f87171",icon:Lock});
-  evs.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  evs.sort((a,b)=>new Date(a.date)-new Date(b.date)); // sort oldest → newest
   return (
     <div>
       <p style={{fontSize:11,fontWeight:700,color:P.muted,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:14}}>Activity Log</p>
@@ -182,7 +196,8 @@ function CaseTimeline({c}) {
   );
 }
 
-// ─── VIEW MODAL ──────────────────────────────────────────────
+//  VIEW MODAL 
+// Footer provides quick Edit / Delete shortcuts for authorised users.
 function ViewModal({c,isAdmin,isStaff,onClose,onEdit,onDelete}) {
   const [tab,setTab]=useState("details");
   if(!c) return null;
@@ -237,7 +252,8 @@ function ViewModal({c,isAdmin,isStaff,onClose,onEdit,onDelete}) {
   );
 }
 
-// ─── CREATE MODAL ────────────────────────────────────────────
+//  CREATE MODAL 
+// Form to open a new case. Steps:
 function CreateModal({onClose,onCreate,saving}) {
   const [form,setForm]=useState({caseNumber:"",reportId:"",assignedOfficer:"",status:"OPEN",priority:"MEDIUM",notes:"",legalAction:{courtName:"",courtDate:"",fineAmount:"",jailDuration:""}});
   const [reports,setReports]=useState([]);
@@ -245,6 +261,7 @@ function CreateModal({onClose,onCreate,saving}) {
   const [rError,setRError]=useState("");
   const [loc,setLoc]=useState({text:"",resolving:false});
 
+  // Fetch available reports from backend; called on modal open and on Refresh click
   const fetchReports=async()=>{
     setRLoading(true);setRError("");
     try{
@@ -263,6 +280,7 @@ function CreateModal({onClose,onCreate,saving}) {
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   const setLegal=(k,v)=>setForm(f=>({...f,legalAction:{...f.legalAction,[k]:v}}));
 
+  // When a report is selected, extract its GPS coords and reverse-geocode to a readable address
   const handleReportSelect=async(id)=>{
     set("reportId",id);
     if(!id){setLoc({text:"",resolving:false});return;}
@@ -350,7 +368,8 @@ function CreateModal({onClose,onCreate,saving}) {
   );
 }
 
-// ─── EDIT MODAL ──────────────────────────────────────────────
+// EDIT MODAL 
+// Case Number and Location are read-only (shown for reference only).
 function EditModal({c,onClose,onSave,saving}) {
   const [form,setForm]=useState({assignedOfficer:c?.assignedOfficer||"",status:c?.status||"OPEN",priority:c?.priority||"MEDIUM",notes:c?.notes||"",legalAction:{courtName:c?.legalAction?.courtName||"",courtDate:c?.legalAction?.courtDate?new Date(c.legalAction.courtDate).toISOString().split("T")[0]:"",fineAmount:c?.legalAction?.fineAmount||"",jailDuration:c?.legalAction?.jailDuration||""}});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
@@ -393,7 +412,7 @@ function EditModal({c,onClose,onSave,saving}) {
   );
 }
 
-// ─── DELETE MODAL ────────────────────────────────────────────
+//  DELETE MODAL 
 function DeleteModal({c,onClose,onConfirm,deleting}) {
   return (
     <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,14,31,0.80)",backdropFilter:"blur(16px)"}}>
@@ -414,61 +433,78 @@ function DeleteModal({c,onClose,onConfirm,deleting}) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+
 // MAIN PAGE
-// ─────────────────────────────────────────────────────────────
+// MAIN PAGE COMPONENT
 export default function CaseManagement() {
   const navigate=useNavigate();
-  const [activeNav,setActiveNav]=useState("cases");
+  const [activeNav,setActiveNav]=useState("cases"); // highlights sidebar item
+
+  // Data state
   const [cases,setCases]=useState([]);
   const [loading,setLoading]=useState(true);
+
+  // Filter / search / pagination state 
   const [search,setSearch]=useState("");
   const [filterStatus,setFilterStatus]=useState("ALL");
   const [filterPriority,setFilterPriority]=useState("ALL");
   const [page,setPage]=useState(1);
-  const [viewing,setViewing]=useState(null);
-  const [editing,setEditing]=useState(null);
-  const [deleting,setDeleting]=useState(null);
+
+  //  Modal visibility stat
+  const [viewing,setViewing]=useState(null);   // case object to view
+  const [editing,setEditing]=useState(null);   // case object to edit
+  const [deleting,setDeleting]=useState(null); // case object to delete
   const [creating,setCreating]=useState(false);
+
   const [saving,setSaving]=useState(false);
   const [deletingId,setDeletingId]=useState(false);
+
   const [toast,setToast]=useState(null);
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
+
   const user=(()=>{try{const t=getToken();return t?JSON.parse(atob(t.split(".")[1])):null;}catch{return null;}})();
   const isAdmin=user?.isAdmin===true;
-  const isStaff=!isAdmin&&!!user;
+  const isStaff=!isAdmin&&!!user; 
 
+  // Fetch all cases from backend; wrapped in useCallback to avoid stale closure in useEffect
   const loadCases=useCallback(async()=>{
     setLoading(true);
     try{const res=await api.getCases();console.log("[CaseManagement] GET /api/cases:",res);const list=extractArray(res,["cases","data","result","results"]);setCases(list??[]);}
     catch{setCases([]);}finally{setLoading(false);}
   },[]);
 
+  // Redirect to login if no token; otherwise load cases on mount
   useEffect(()=>{if(!getToken()){navigate("/login",{replace:true});return;}loadCases();},[loadCases,navigate]);
 
+  // Apply search text + status + priority filters, then sort newest first
   const filtered=useMemo(()=>{
     const q=search.trim().toLowerCase();
-    const matchesQ = c => [c.caseNumber,c.assignedOfficer,c.locationName,c.notes,c.status,c.priority].filter(Boolean).some(v=>String(v).toLowerCase().includes(q));
-    let list = q ? cases.filter(matchesQ) : cases.slice();
-    if (filterStatus && filterStatus !== "ALL") list = list.filter(c => c.status === filterStatus);
-    if (filterPriority && filterPriority !== "ALL") list = list.filter(c => c.priority === filterPriority);
+    let list=cases;
+    if(q) list=list.filter(c=>[c.caseNumber,c.assignedOfficer,c.locationName,c.notes].filter(Boolean).some(v=>String(v).toLowerCase().includes(q)));
+    if(filterStatus!=="ALL")   list=list.filter(c=>c.status===filterStatus);
+    if(filterPriority!=="ALL") list=list.filter(c=>c.priority===filterPriority);
     return list.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-  },[search,cases,filterStatus,filterPriority]);
+  },[search,filterStatus,filterPriority,cases]);
 
-  useEffect(()=>{setPage(1);},[search, filterStatus, filterPriority]);
+  useEffect(()=>{setPage(1);},[search,filterStatus,filterPriority]);
+
   const totalPages=Math.max(1,Math.ceil(filtered.length/PER_PAGE));
-  const paged=filtered.slice((page-1)*PER_PAGE,page*PER_PAGE);
+  const paged=filtered.slice((page-1)*PER_PAGE,page*PER_PAGE); // current page slice
 
   const stats=useMemo(()=>({
     total:cases.length,open:cases.filter(c=>c.status==="OPEN").length,
     high:cases.filter(c=>c.priority==="HIGH").length,closed:cases.filter(c=>c.status==="CLOSED").length,
   }),[cases]);
 
+ 
   const handleCreate=async data=>{setSaving(true);try{const n=await api.createCase(data);if(n._id){setCases(cs=>[n,...cs]);setCreating(false);showToast(`✅ Case ${n.caseNumber} created!`);}else showToast(n.message||"Failed.","error");}catch{showToast("Failed to create.","error");}finally{setSaving(false);}};
   const handleSave=async(id,data)=>{setSaving(true);try{const u=await api.updateCase(id,data);setCases(cs=>cs.map(c=>c._id===id?{...c,...u}:c));setEditing(null);showToast("Case updated!");}catch{showToast("Failed to update.","error");}finally{setSaving(false);}};
   const handleDelete=async id=>{setDeletingId(true);try{await api.deleteCase(id);setCases(cs=>cs.filter(c=>c._id!==id));setDeleting(null);showToast("Case deleted.");}catch{showToast("Failed to delete.","error");}finally{setDeletingId(false);}};
+
+  // Navigate to another admin section and update active sidebar highlight
   const handleNav=(id,path)=>{setActiveNav(id);navigate(path);};
+  // Clear token and redirect to login
   const handleLogout=()=>{localStorage.removeItem("token");localStorage.removeItem("user");sessionStorage.clear();navigate("/login",{replace:true});};
 
   return (
@@ -542,7 +578,7 @@ export default function CaseManagement() {
                 <p style={{margin:"4px 0 0",fontSize:13,color:P.muted}}>Investigate, manage and track pollution cases</p>
               </div>
               {(isAdmin||isStaff)&&(
-                <button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:8,borderRadius:16,padding:"12px 22px",fontSize:14,minWidth:180}}>
+                <button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:8,borderRadius:16,padding:"10px 20px",fontSize:13}}>
                   <Plus size={16}/> Create New Case
                 </button>
               )}
@@ -569,36 +605,61 @@ export default function CaseManagement() {
             {/* Table section */}
             <section className="cm-card cm-fade" style={{marginTop:18,borderRadius:24,overflow:"hidden",animationDelay:"100ms"}}>
               {/* Table toolbar */}
-              <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",justifyContent:"space-between",padding:"16px 22px",borderBottom:`1px solid ${P.divider}`}}>
-                <div>
-                  <h2 style={{margin:0,fontSize:19,fontWeight:800,color:P.text}}>Cases</h2>
-                  <p style={{margin:"2px 0 0",fontSize:12,color:P.muted}}>Search, view, edit and delete cases</p>
+              <div style={{padding:"16px 22px",borderBottom:`1px solid ${P.divider}`}}>
+                {/* Top row: title + action buttons */}
+                <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                  <div>
+                    <h2 style={{margin:0,fontSize:19,fontWeight:800,color:P.text}}>Cases</h2>
+                    <p style={{margin:"2px 0 0",fontSize:12,color:P.muted}}>
+                      {filtered.length} {filtered.length===1?"case":"cases"}
+                      {(filterStatus!=="ALL"||filterPriority!=="ALL")&&<span style={{color:P.cyanLight}}> (filtered)</span>}
+                    </p>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <button onClick={loadCases} disabled={loading} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:6,borderRadius:12,padding:"9px 14px",fontSize:12,opacity:loading?0.6:1}}>
+                      <RefreshCw size={12} style={{animation:loading?"spin 1s linear infinite":"none"}}/> Refresh
+                    </button>
+                    {(isAdmin||isStaff)&&(
+                      <button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:6,borderRadius:12,padding:"9px 16px",fontSize:13}}>
+                        <Plus size={14}/> Add Case
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:18}}>
-                  <div style={{position:"relative",width:280}}>
+                {/* Bottom row: search + filters */}
+                <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center"}}>
+                  {/* Search */}
+                  <div style={{position:"relative",flex:"1",minWidth:200}}>
                     <Search size={14} style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:P.muted,pointerEvents:"none"}}/>
-                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cases…"
-                      style={{width:"100%",borderRadius:14,padding:"9px 14px 9px 34px",fontSize:13,border:`1px solid ${P.border}`,background:"rgba(255,255,255,0.05)",color:P.text,outline:"none"}}/>
+                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by case no., officer, location…"
+                      style={{width:"100%",borderRadius:12,padding:"9px 34px 9px 34px",fontSize:13,border:`1px solid ${P.border}`,background:"rgba(255,255,255,0.05)",color:P.text,outline:"none",boxSizing:"border-box"}}/>
+                    {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.muted,display:"flex",alignItems:"center",padding:0}}><X size={13}/></button>}
                   </div>
-
-                  <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{height:38,borderRadius:12,padding:"8px 10px",border:`1px solid ${P.cyanLight}`,background:"rgba(34,211,238,0.06)",color:P.cyanLight,cursor:"pointer",fontWeight:700}}>
-                      <option value="ALL">All statuses</option>
-                      {STATUSES.map(s=>(<option key={s} value={s}>{STATUS_META[s].label}</option>))}
+                  {/* Status filter */}
+                  <div style={{position:"relative"}}>
+                    <Filter size={12} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:P.muted,pointerEvents:"none"}}/>
+                    <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
+                      style={{appearance:"none",paddingLeft:28,paddingRight:28,paddingTop:9,paddingBottom:9,borderRadius:12,border:`1px solid ${filterStatus!=="ALL"?P.cyanLight:P.border}`,background:filterStatus!=="ALL"?"rgba(34,211,238,0.08)":"rgba(255,255,255,0.05)",color:filterStatus!=="ALL"?P.cyanLight:P.muted,fontSize:13,outline:"none",cursor:"pointer",fontFamily:"Inter,sans-serif",fontWeight:600,minWidth:148}}>
+                      <option value="ALL" style={{background:"#0d1f35",color:"#fff"}}>All Statuses</option>
+                      {STATUSES.map(s=><option key={s} value={s} style={{background:"#0d1f35",color:"#fff"}}>{STATUS_META[s].label}</option>)}
                     </select>
-                    <select value={filterPriority} onChange={e=>setFilterPriority(e.target.value)} style={{height:38,borderRadius:12,padding:"8px 10px",border:`1px solid ${P.cyanLight}`,background:"rgba(34,211,238,0.04)",color:P.cyanLight,cursor:"pointer",fontWeight:700}}>
-                      <option value="ALL">All priorities</option>
-                      {PRIORITIES.map(p=>(<option key={p} value={p}>{p}</option>))}
-                    </select>
-                    <button onClick={()=>{setFilterStatus("ALL");setFilterPriority("ALL");}} className="cm-btn-primary" style={{padding:"10px 18px",minWidth:130,borderRadius:12,fontSize:13,display:"inline-flex",alignItems:"center",gap:8,background:`linear-gradient(135deg,${P.cyan} 0%,${P.blue} 100%)`}}>Clear Filters</button>
+                    <ChevronDown size={12} style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",color:P.muted,pointerEvents:"none"}}/>
                   </div>
-
-                  <button onClick={loadCases} disabled={loading} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:8,borderRadius:12,padding:"10px 18px",fontSize:13,minWidth:130,opacity:loading?0.6:1}}>
-                    <RefreshCw size={12} style={{animation:loading?"spin 1s linear infinite":"none"}}/> Refresh
-                  </button>
-                  {(isAdmin||isStaff)&&(
-                    <button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:8,borderRadius:12,padding:"10px 18px",fontSize:13,minWidth:140}}>
-                      <Plus size={14}/> Add Case
+                  {/* Priority filter */}
+                  <div style={{position:"relative"}}>
+                    <Filter size={12} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:P.muted,pointerEvents:"none"}}/>
+                    <select value={filterPriority} onChange={e=>setFilterPriority(e.target.value)}
+                      style={{appearance:"none",paddingLeft:28,paddingRight:28,paddingTop:9,paddingBottom:9,borderRadius:12,border:`1px solid ${filterPriority!=="ALL"?P.cyanLight:P.border}`,background:filterPriority!=="ALL"?"rgba(34,211,238,0.08)":"rgba(255,255,255,0.05)",color:filterPriority!=="ALL"?P.cyanLight:P.muted,fontSize:13,outline:"none",cursor:"pointer",fontFamily:"Inter,sans-serif",fontWeight:600,minWidth:140}}>
+                      <option value="ALL" style={{background:"#0d1f35",color:"#fff"}}>All Priorities</option>
+                      {PRIORITIES.map(p=><option key={p} value={p} style={{background:"#0d1f35",color:"#fff"}}>{p}</option>)}
+                    </select>
+                    <ChevronDown size={12} style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",color:P.muted,pointerEvents:"none"}}/>
+                  </div>
+                  {/* Clear filters */}
+                  {(filterStatus!=="ALL"||filterPriority!=="ALL")&&(
+                    <button onClick={()=>{setFilterStatus("ALL");setFilterPriority("ALL");}}
+                      style={{display:"inline-flex",alignItems:"center",gap:5,borderRadius:12,padding:"9px 12px",fontSize:12,border:"1px solid rgba(248,113,113,0.3)",background:"rgba(248,113,113,0.08)",color:"#f87171",cursor:"pointer",fontFamily:"Inter,sans-serif",fontWeight:600}}>
+                      <X size={11}/> Clear
                     </button>
                   )}
                 </div>
@@ -616,7 +677,6 @@ export default function CaseManagement() {
                     <table className="cm-table" style={{width:"100%",minWidth:860,borderCollapse:"collapse"}}>
                       <thead>
                         <tr>
-                          {/* removed bulk-select checkboxes */}
                           <th>Case No.</th>
                           <th>Officer</th>
                           <th>Location</th>
@@ -629,7 +689,6 @@ export default function CaseManagement() {
                       <tbody>
                         {paged.map(c=>(
                           <tr key={c._id} className="cm-row">
-                            {/* checkbox removed */}
                             <td><span style={{fontFamily:"monospace",fontWeight:800,color:P.cyanLight,fontSize:13,letterSpacing:0.5}}>{c.caseNumber}</span></td>
                             <td>
                               <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -661,11 +720,18 @@ export default function CaseManagement() {
                           </tr>
                         ))}
                         {paged.length===0&&(
-                                <tr><td colSpan={7} style={{textAlign:"center",padding:56,color:P.muted,fontSize:14}}>
-                                  {search?"No cases match your search.":"No cases found."}
-                                  {!search&&(isAdmin||isStaff)&&<div style={{marginTop:12}}><button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:8,borderRadius:12,padding:"10px 18px",fontSize:13,minWidth:160}}> <Plus size={13}/> Create First Case</button></div>}
-                                </td></tr>
-                              )}
+                          <tr><td colSpan={7} style={{textAlign:"center",padding:56,color:P.muted,fontSize:14}}>
+                            {search||filterStatus!=="ALL"||filterPriority!=="ALL"
+                              ?"No cases match your filters."
+                              :"No cases found."}
+                            {(search||filterStatus!=="ALL"||filterPriority!=="ALL")&&(
+                              <div style={{marginTop:10}}>
+                                <button onClick={()=>{setSearch("");setFilterStatus("ALL");setFilterPriority("ALL");}} style={{display:"inline-flex",alignItems:"center",gap:5,borderRadius:12,padding:"7px 14px",fontSize:12,border:`1px solid ${P.border}`,color:P.muted,background:"rgba(255,255,255,0.04)",cursor:"pointer",fontFamily:"Inter,sans-serif",fontWeight:600}}><X size={11}/> Clear Filters</button>
+                              </div>
+                            )}
+                            {!search&&filterStatus==="ALL"&&filterPriority==="ALL"&&(isAdmin||isStaff)&&<div style={{marginTop:12}}><button onClick={()=>setCreating(true)} className="cm-btn-primary" style={{display:"inline-flex",alignItems:"center",gap:6,borderRadius:12,padding:"8px 18px",fontSize:12}}><Plus size={13}/> Create First Case</button></div>}
+                          </td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
