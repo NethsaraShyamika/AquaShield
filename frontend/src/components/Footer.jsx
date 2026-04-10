@@ -8,14 +8,6 @@ export default function Footer() {
         <p className="text-gray-400 text-sm">
           Protecting Sri Lanka’s marine life through community-powered reporting.
         </p>
-
-        <div className="flex justify-center gap-6 text-sm text-gray-300">
-          <span className="hover:text-cyan-400 cursor-pointer">Home</span>
-          <span className="hover:text-cyan-400 cursor-pointer">Reports</span>
-          <span className="hover:text-cyan-400 cursor-pointer">Find Fish</span>
-          <span className="hover:text-cyan-400 cursor-pointer">Species Guide</span>
-        </div>
-
         <p className="text-xs text-gray-500">
           © {new Date().getFullYear()} AquaShield. All rights reserved.
         </p>

@@ -1,97 +1,67 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
 import Footer from "../components/Footer";
 import EditProfile from "./EditProfile";
+import {
+  Fish, Shield, FileText, Search, MapPin, ChevronRight,
+  LogOut, User, AlertTriangle, Clock, CheckCircle, X,
+  Home, List, Eye,
+} from "lucide-react";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+// ─── API CONFIG ───────────────────────────────────────────────
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-const STATUS_STYLES = {
-  Pending: "chip chip-amber",
-  "Under Review": "chip chip-blue",
-  Verified: "chip chip-green",
-  Dismissed: "chip chip-gray",
-  Resolved: "chip chip-emerald",
+// ─── CONSTANTS ────────────────────────────────────────────────
+const STATUS_COLORS = {
+  Pending:        { bg: "rgba(234,179,8,0.12)",  border: "rgba(234,179,8,0.35)",  text: "#fbbf24", tw: "bg-yellow-500/20 text-yellow-400"  },
+  "Under Review": { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.35)", text: "#60a5fa", tw: "bg-blue-500/20 text-blue-400"      },
+  Verified:       { bg: "rgba(20,184,166,0.12)", border: "rgba(20,184,166,0.35)", text: "#2dd4bf", tw: "bg-teal-500/20 text-teal-400"      },
+  Dismissed:      { bg: "rgba(244,63,94,0.12)",  border: "rgba(244,63,94,0.35)",  text: "#fb7185", tw: "bg-red-500/20 text-red-400"        },
+  Resolved:       { bg: "rgba(34,197,94,0.12)",  border: "rgba(34,197,94,0.35)",  text: "#4ade80", tw: "bg-green-500/20 text-green-400"    },
 };
 
-const statusStageMap = {
-  Pending: 1,
-  "Under Review": 2,
-  Verified: 3,
-  Resolved: 4,
-  Dismissed: 4,
+const statusStageMap = { Pending: 1, "Under Review": 2, Verified: 3, Resolved: 4, Dismissed: 4 };
+
+const BODY_SHAPES           = ["torpedo", "oval", "flat", "eel-like", "box-like"];
+const IDENTIFY_BODY_SHAPES  = ["Fusiform", "Compressiform", "Depressiform", "Anguilliform", "Sagittiform"];
+const TAIL_SHAPES           = ["crescent", "forked", "rounded", "square", "pointed"];
+const INCIDENT_TYPES        = [
+  "Illegal Net Fishing", "Dynamite Fishing", "Cyanide Fishing",
+  "Trawling in Protected Zone", "Catching Protected Species",
+  "Night Fishing Violation", "Other",
+];
+
+const BODY_SHAPE_REFERENCES = {
+  Fusiform:       { description: "Streamlined, spindle-shaped body. Pointed at both ends, widens in the middle.", image: "/fusiform-reference.png" },
+  Compressiform:  { description: "Flattened side-to-side, like a pancake. High and narrow body.",                image: "/compressiform-reference.png" },
+  Depressiform:   { description: "Flattened top to bottom, like a stingray. Wide and flat body.",                image: "/depressiform-reference.png" },
+  Anguilliform:   { description: "Snake-like, elongated and thin. Wavy, sinuous body.",                          image: "/anguilliform-reference.png" },
+  Sagittiform:    { description: "Arrow-shaped body. Pointed head with triangular tail.",                        image: "/sagittiform-reference.png" },
 };
 
+const TAIL_SHAPE_REFERENCES = {
+  Rounded: { description: "Rounded tail shape with a smooth, curved edge.",    image: "/rounded-tail-reference.png"  },
+  Crescent:{ description: "Crescent tail shape with a curved, moon-like edge.",image: "/crescent-tail-reference.png" },
+  Forked:  { description: "Forked tail shape with a split end.",                image: "/forked-tail-reference.png"   },
+  Square:  { description: "Square tail shape with a straight, flat end.",       image: "/square-tail-reference.png"   },
+  Pointed: { description: "Pointed tail shape with a narrow, sharp end.",       image: "/pointed-tail-reference.png"  },
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────
 function formatDate(value) {
   if (!value) return "Unknown date";
-  const date = new Date(value);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
-
-const BODY_SHAPES = ["torpedo", "oval", "flat", "eel-like", "box-like"];
-const IDENTIFY_BODY_SHAPES = [
-  "Fusiform",
-  "Compressiform",
-  "Depressiform",
-  "Anguilliform",
-  "Sagittiform",
-];
-const BODY_SHAPE_REFERENCES = {
-  Fusiform: {
-    description: "Streamlined, spindle-shaped body. Pointed at both ends, widens in the middle.",
-    image: "/fusiform-reference.png",
-  },
-  Compressiform: {
-    description: "Flattened side-to-side, like a pancake. High and narrow body.",
-    image: "/compressiform-reference.png",
-  },
-  Depressiform: {
-    description: "Flattened top to bottom, like a stingray. Wide and flat body.",
-    image: "/depressiform-reference.png",
-  },
-  Anguilliform: {
-    description: "Snake-like, elongated and thin. Wavy, sinuous body.",
-    image: "/anguilliform-reference.png",
-  },
-  Sagittiform: {
-    description: "Arrow-shaped body. Pointed head with triangular tail.",
-    image: "/sagittiform-reference.png",
-  },
-};
-const TAIL_SHAPE_REFERENCES = {
-  Rounded: { description: "Rounded tail shape with a smooth, curved edge.", image: "/rounded-tail-reference.png" },
-  Crescent: { description: "Crescent tail shape with a curved, moon-like edge.", image: "/crescent-tail-reference.png" },
-  Forked: { description: "Forked tail shape with a split end.", image: "/forked-tail-reference.png" },
-  Square: { description: "Square tail shape with a straight, flat end.", image: "/square-tail-reference.png" },
-  Pointed: { description: "Pointed tail shape with a narrow, sharp end.", image: "/pointed-tail-reference.png" },
-};
-const TAIL_SHAPES = ["crescent", "forked", "rounded", "square", "pointed"];
-const INCIDENT_TYPES = [
-  "Illegal Net Fishing",
-  "Dynamite Fishing",
-  "Cyanide Fishing",
-  "Trawling in Protected Zone",
-  "Catching Protected Species",
-  "Night Fishing Violation",
-  "Other",
-];
 
 function tokenFromStorage() {
   const keys = ["token", "authToken", "accessToken", "jwt"];
   for (const key of keys) {
     const token = localStorage.getItem(key) || sessionStorage.getItem(key);
     if (token) {
-      let normalized = token.trim();
-      if (normalized.startsWith("Bearer ")) normalized = normalized.slice(7).trim();
-      if ((normalized.startsWith('"') && normalized.endsWith('"')) || (normalized.startsWith("'") && normalized.endsWith("'"))) {
-        normalized = normalized.slice(1, -1);
-      }
-      return normalized;
+      let n = token.trim();
+      if (n.startsWith("Bearer ")) n = n.slice(7).trim();
+      if ((n.startsWith('"') && n.endsWith('"')) || (n.startsWith("'") && n.endsWith("'"))) n = n.slice(1, -1);
+      return n;
     }
   }
   return "";
@@ -99,64 +69,51 @@ function tokenFromStorage() {
 
 function decodeJwtPayload(token) {
   try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(normalized));
-  } catch {
-    return null;
-  }
+    const p = token.split(".")[1];
+    if (!p) return null;
+    return JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch { return null; }
 }
 
 async function fetchJson(path, token) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
   let data = null;
-  try { data = await response.json(); } catch { data = null; }
-  if (!response.ok) throw new Error(data?.message || "Request failed");
+  try { data = await res.json(); } catch { data = null; }
+  if (!res.ok) throw new Error(data?.message || "Request failed");
   return data;
 }
 
 function toTitleCase(value) {
-  return value.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  return value.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function normalizeIdentifyShape(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
+function normalizeIdentifyShape(value)   { return String(value || "").trim().toLowerCase(); }
 function normalizeSpeciesBodyShape(value) {
-  const shape = normalizeIdentifyShape(value);
-  if (!shape) return "";
-  if (shape === "torpedo" || shape === "fusiform") return "fusiform";
-  if (shape === "oval" || shape === "compressiform") return "compressiform";
-  if (shape === "flat" || shape === "depressiform") return "depressiform";
-  if (shape === "eel-like" || shape === "anguilliform") return "anguilliform";
-  if (shape === "sagittiform") return "sagittiform";
-  return shape;
+  const s = normalizeIdentifyShape(value);
+  if (!s) return "";
+  if (s === "torpedo" || s === "fusiform")       return "fusiform";
+  if (s === "oval"    || s === "compressiform")  return "compressiform";
+  if (s === "flat"    || s === "depressiform")   return "depressiform";
+  if (s === "eel-like"|| s === "anguilliform")   return "anguilliform";
+  if (s === "sagittiform")                       return "sagittiform";
+  return s;
 }
 
 function formatBodyShapeLabel(value) {
-  const normalized = normalizeSpeciesBodyShape(value);
-  if (!normalized) return "Unknown";
-  if (normalized === "fusiform") return "Fusiform";
-  if (normalized === "compressiform") return "Compressiform";
-  if (normalized === "depressiform") return "Depressiform";
-  if (normalized === "anguilliform") return "Anguilliform";
-  if (normalized === "sagittiform") return "Sagittiform";
-  return String(value || "").trim() || "Unknown";
+  const n = normalizeSpeciesBodyShape(value);
+  if (!n) return "Unknown";
+  const map = { fusiform:"Fusiform", compressiform:"Compressiform", depressiform:"Depressiform", anguilliform:"Anguilliform", sagittiform:"Sagittiform" };
+  return map[n] || (String(value||"").trim() || "Unknown");
 }
 
 function toSpeciesKey(item) {
-  if (!item) return "";
-  return String(item._id || item.id || item.scientificName || item.name || "");
+  return String(item?._id || item?.id || item?.scientificName || item?.name || "");
 }
 
 function formatMonthRange(legalSeason) {
   if (!legalSeason?.startMonth || !legalSeason?.endMonth) return "Not specified";
-  const monthName = (monthIndex) => new Date(2000, monthIndex - 1, 1).toLocaleString(undefined, { month: "long" });
-  return `${monthName(legalSeason.startMonth)} - ${monthName(legalSeason.endMonth)}`;
+  const monthName = (m) => new Date(2000, m - 1, 1).toLocaleString(undefined, { month: "long" });
+  return `${monthName(legalSeason.startMonth)} – ${monthName(legalSeason.endMonth)}`;
 }
 
 function resolveSpeciesImageUrl(item) {
@@ -171,7 +128,7 @@ function resolveSpeciesImageUrl(item) {
     } else { value = trimmed; }
   }
   if (Array.isArray(value)) { const first = value.find(Boolean); value = first || ""; }
-  if (value && typeof value === "object") { value = value.url || value.secure_url || value.path || ""; }
+  if (value && typeof value === "object") value = value.url || value.secure_url || value.path || "";
   if (typeof value !== "string") return "";
   const url = value.trim();
   if (!url) return "";
@@ -180,197 +137,675 @@ function resolveSpeciesImageUrl(item) {
   return `${window.location.origin}/${url}`;
 }
 
-function DashboardHome({
-  firstName,
-  isLoading,
-  reportCount,
-  underReviewCount,
-  identifiedSpeciesCount,
-  recentReports,
-  protectedSpecies,
-  topMatch,
-  last30DaysIncidents,
-  onOpenComplaintModal,
-  onOpenIdentifyView,
-  onViewMyReports,
-  onViewReportForm,
-  isProfileMenuOpen,
-  onToggleProfileMenu,
-  onViewProfile,       // ✅ opens EditProfile modal
-  onLogout,
-  profileMenuRef,
-}) {
+// ─── STATUS BADGE ─────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const sc = STATUS_COLORS[status];
+  if (!sc) return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white/40">{status}</span>;
   return (
-    <>
-      <header className="topbar card-reveal">
-        <div className="brand-block">
-          <span className="shield-dot" aria-hidden="true" />
-          <strong>AquaShield</strong>
-        </div>
-
-        <nav className="nav-row" aria-label="Primary">
-          <button className="nav-btn nav-btn-active nav-option-animate" type="button" style={{ "--option-delay": "0ms" }}>Home</button>
-          <button className="nav-btn nav-option-animate" type="button" onClick={onViewMyReports} style={{ "--option-delay": "90ms" }}>My Reports</button>
-          <button className="nav-btn nav-option-animate" type="button" onClick={onOpenIdentifyView} style={{ "--option-delay": "180ms" }}>Identify Fish</button>
-          <button className="nav-btn nav-option-animate" type="button" style={{ "--option-delay": "270ms" }}>Species</button>
-        </nav>
-
-        <div className="profile-container" ref={profileMenuRef}>
-          <button className="avatar" type="button" onClick={onToggleProfileMenu} aria-label="Profile menu">
-            {(firstName?.charAt(0) || "U").toUpperCase()}
-          </button>
-          {isProfileMenuOpen && (
-            <div className="profile-dropdown profile-slidebar" onClick={(e) => e.stopPropagation()}>
-              {/* ✅ View Profile opens EditProfile modal */}
-              <button className="dropdown-item" type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(); }}>
-                View Profile
-              </button>
-            </div>
-          )}
-        </div>
-
-        <button className="header-logout-btn" type="button" onClick={onLogout}>Logout</button>
-      </header>
-
-      <section className="hero card-reveal delay-1">
-        <div className="hero-copy">
-          <p className="hero-kicker">Good Morning, {firstName}</p>
-          <h1>Protect Sri Lanka&apos;s Ocean Species</h1>
-          <p className="hero-sub">Report illegal fishing or identify a species in seconds.</p>
-          <div className="hero-actions">
-            <button className="solid-btn" type="button" onClick={onViewReportForm}>Create Report</button>
-          </div>
-        </div>
-      </section>
-
-      <section className="dashboard-grid">
-        <div className="left-column">
-          <div className="activity-metrics card-reveal delay-2">
-            <article className="metric-card">
-              <h3>Reports filed</h3>
-              <p className="metric-value">{isLoading ? "-" : reportCount}</p>
-              <small>{reportCount > 0 ? "3 resolved" : "No reports yet"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Under review</h3>
-              <p className="metric-value">{isLoading ? "-" : underReviewCount}</p>
-              <small>{underReviewCount > 0 ? "1 escalated" : "All cleared"}</small>
-            </article>
-            <article className="metric-card">
-              <h3>Species identified</h3>
-              <p className="metric-value">{isLoading ? "-" : identifiedSpeciesCount}</p>
-              <small>Via reports submitted</small>
-            </article>
-          </div>
-
-          <section className="recent-reports card-reveal delay-4">
-            <div className="section-head"><h2>Recent reports</h2></div>
-            {recentReports.length === 0 && !isLoading ? <p className="empty-state">No reports submitted yet.</p> : null}
-            {recentReports.map((report) => {
-              const stage = statusStageMap[report.status] || 1;
-              const stageText = `Step ${stage} of 4`;
-              const speciesLabel = report.speciesInvolved?.[0]?.name || "Species unidentified";
-              return (
-                <article key={report._id} className="report-item">
-                  <div className="report-head">
-                    <h3>{report.incidentType}</h3>
-                    <span className={STATUS_STYLES[report.status] || "chip chip-gray"}>{report.status}</span>
-                  </div>
-                  <p className="report-meta">Filed {formatDate(report.createdAt)}</p>
-                  <p className="species-line">{speciesLabel}</p>
-                  <div className="progress-track" role="progressbar" aria-valuenow={stage} aria-valuemin="1" aria-valuemax="4">
-                    <span style={{ width: `${(stage / 4) * 100}%` }} />
-                  </div>
-                  <p className="step-label">{stageText}</p>
-                </article>
-              );
-            })}
-          </section>
-        </div>
-
-        <aside className="right-column">
-          <section className="identifier-card card-reveal delay-2">
-            <div className="section-head">
-              <h2>Quick fish identifier</h2>
-              <button className="inline-link" type="button" onClick={onOpenIdentifyView}>Full tool →</button>
-            </div>
-            <article className="fish-result">
-              <h3>{topMatch?.name || "No species selected"}</h3>
-              <p>{topMatch?.scientificName || "Adjust filters to find species."}</p>
-              <button className="solid-btn identify-btn" type="button" onClick={onOpenIdentifyView}>Identify Species</button>
-              <p className="identify-help">Pick a body shape and tail shape to narrow the match quickly.</p>
-            </article>
-          </section>
-
-          <section className="species-card card-reveal delay-3">
-            <div className="section-head"><h2>Protected species nearby</h2></div>
-            <div className="species-list">
-              {protectedSpecies.map((item) => (
-                <article key={item._id || item.id} className="species-item">
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.scientificName}</p>
-                  </div>
-                  <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>
-                    {item.isFullyBanned ? "Banned" : item.protectionStatus}
-                  </span>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="map-card card-reveal delay-4">
-            <div className="section-head"><h2>Incident map</h2></div>
-            <div className="map-box">
-              <p>{last30DaysIncidents} incidents near you</p>
-              <small>Sri Lanka · last 30 days</small>
-            </div>
-          </section>
-        </aside>
-      </section>
-
-      <Footer />
-    </>
+    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
+      {status}
+    </span>
   );
 }
 
+// ─── PROGRESS BAR ─────────────────────────────────────────────
+function StageProgress({ stage }) {
+  return (
+    <div className="mt-3">
+      <div className="w-full h-1.5 rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-700"
+          style={{ width: `${(stage / 4) * 100}%` }} />
+      </div>
+      <p className="text-[10px] text-white/30 mt-1 font-semibold">Step {stage} of 4</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// DASHBOARD HOME VIEW
+// ─────────────────────────────────────────────────────────────
+function DashboardHome({
+  firstName, isLoading, reportCount, underReviewCount, identifiedSpeciesCount,
+  recentReports, protectedSpecies, topMatch, last30DaysIncidents,
+  onOpenComplaintModal, onOpenIdentifyView, onViewMyReports, onViewReportForm,
+  isProfileMenuOpen, onToggleProfileMenu, onViewProfile, onLogout, profileMenuRef,
+}) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E3A5F] to-[#0C1423] relative overflow-x-hidden">
+      {/* Background blobs */}
+      <div className="absolute w-[380px] h-[380px] rounded-full blur-[70px] bg-blue-500/20 -top-[120px] -left-[100px] pointer-events-none" />
+      <div className="absolute w-[460px] h-[460px] rounded-full blur-[70px] bg-[#1E3A5F]/30 -right-[140px] -bottom-[170px] pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+
+        {/* ── TOPBAR ──────────────────────────────────────── */}
+        <header className="sticky top-0 z-30 bg-[rgba(6,15,30,0.88)] backdrop-blur-[18px] border-b border-white/10">
+          <div className="max-w-[1180px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
+            {/* Brand */}
+            <div className="flex items-center gap-2.5">
+              <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30">
+                <Fish size={16} className="text-cyan-400" />
+              </div>
+              <span className="text-sm font-extrabold text-white">AquaShield</span>
+            </div>
+
+            {/* Nav */}
+            <nav className="hidden md:flex items-center gap-1">
+              {[
+                { label: "Home",           icon: Home,     action: null,               active: true  },
+                { label: "My Reports",     icon: List,     action: onViewMyReports,    active: false },
+                { label: "Identify Fish",  icon: Eye,      action: onOpenIdentifyView, active: false },
+              ].map(({ label, icon: Icon, action, active }) => (
+                <button key={label} type="button" onClick={action}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    active
+                      ? "bg-cyan-500/15 text-cyan-400 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.28)]"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                  }`}>
+                  <Icon size={14} />{label}
+                </button>
+              ))}
+            </nav>
+
+            {/* Right side */}
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={onViewReportForm}
+                className="hidden sm:inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_8px_20px_rgba(6,182,212,0.30)] hover:brightness-105 transition-all">
+                <FileText size={14} /> Create Report
+              </button>
+
+              {/* Profile */}
+              <div className="relative" ref={profileMenuRef}>
+                <button type="button" onClick={onToggleProfileMenu} aria-label="Profile menu"
+                  className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-sm font-extrabold text-cyan-400 hover:from-cyan-500/30 hover:to-blue-600/30 transition-all">
+                  {(firstName?.charAt(0) || "U").toUpperCase()}
+                </button>
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-11 w-44 bg-[rgba(6,15,30,0.97)] border border-white/15 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+                    onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white transition-all text-left">
+                      <User size={14} /> View Profile
+                    </button>
+                    <div className="border-t border-white/10" />
+                    <button type="button" onClick={onLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all text-left">
+                      <LogOut size={14} /> Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* ── HERO ────────────────────────────────────────── */}
+        <section className="max-w-[1180px] mx-auto px-6 pt-10 pb-8 w-full">
+          <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-8 py-8 shadow-xl">
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] border border-white/10 bg-white/5 text-cyan-400 mb-4">
+              <Shield size={12} /> AquaShield
+            </div>
+            <p className="text-cyan-400/70 text-sm font-semibold mb-1">Good morning, {firstName}</p>
+            <h1 className="text-[32px] font-extrabold tracking-tight text-white leading-tight mb-2">
+              Protect Sri Lanka's Ocean Species
+            </h1>
+            <p className="text-white/40 text-sm mb-6">Report illegal fishing or identify a species in seconds.</p>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={onViewReportForm}
+                className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(6,182,212,0.30)] hover:brightness-105 transition-all">
+                <FileText size={15} /> Create Report
+              </button>
+              <button type="button" onClick={onOpenIdentifyView}
+                className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all">
+                <Fish size={15} /> Identify Species
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── MAIN GRID ───────────────────────────────────── */}
+        <div className="max-w-[1180px] mx-auto px-6 pb-10 w-full flex flex-col gap-6">
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: FileText,    label: "Reports Filed",      value: reportCount,             sub: reportCount > 0 ? "3 resolved" : "No reports yet",   iconClass: "bg-cyan-500/20 border-cyan-500/30",   textClass: "text-cyan-400"   },
+              { icon: Clock,       label: "Under Review",       value: underReviewCount,        sub: underReviewCount > 0 ? "1 escalated" : "All cleared", iconClass: "bg-amber-500/20 border-amber-500/30", textClass: "text-amber-400"  },
+              { icon: Fish,        label: "Species Identified", value: identifiedSpeciesCount,  sub: "Via reports submitted",                             iconClass: "bg-blue-500/20 border-blue-500/30",   textClass: "text-blue-400"   },
+            ].map(({ icon: Icon, label, value, sub, iconClass, textClass }) => (
+              <div key={label} className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-2xl p-5 shadow-xl">
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border mb-3 ${iconClass}`}>
+                  <Icon size={18} className={textClass} />
+                </div>
+                <p className="text-sm text-white/40">{label}</p>
+                {isLoading
+                  ? <div className="h-9 w-12 rounded-lg animate-pulse bg-white/5 mt-1" />
+                  : <p className={`text-3xl font-extrabold ${textClass}`}>{value}</p>
+                }
+                <p className="text-xs text-white/25 mt-1">{sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Two-column section */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+
+            {/* Left: Recent reports */}
+            <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl overflow-hidden shadow-xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                <div>
+                  <h2 className="text-xl font-extrabold text-white">Recent Reports</h2>
+                  <p className="text-sm text-white/40">Your latest submitted reports</p>
+                </div>
+                <button type="button" onClick={onViewMyReports}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all">
+                  View all <ChevronRight size={12} />
+                </button>
+              </div>
+
+              {recentReports.length === 0 && !isLoading ? (
+                <div className="px-6 py-14 text-center text-white/40 text-sm">No reports submitted yet.</div>
+              ) : (
+                <div className="divide-y divide-white/5">
+                  {recentReports.map((report) => {
+                    const stage = statusStageMap[report.status] || 1;
+                    const sc    = STATUS_COLORS[report.status];
+                    return (
+                      <div key={report._id} className="px-6 py-4 hover:bg-white/5 transition-all">
+                        <div className="flex items-start justify-between gap-3 mb-1">
+                          <h3 className="text-sm font-bold text-white">{report.incidentType}</h3>
+                          <StatusBadge status={report.status} />
+                        </div>
+                        <p className="text-xs text-white/40 mb-0.5">Filed {formatDate(report.createdAt)}</p>
+                        <p className="text-xs text-white/50">{report.speciesInvolved?.[0]?.name || "Species unidentified"}</p>
+                        <StageProgress stage={stage} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Right column */}
+            <div className="flex flex-col gap-4">
+
+              {/* Quick Identifier */}
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-5 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-base font-extrabold text-white">Quick Fish Identifier</h2>
+                    <p className="text-xs text-white/40 mt-0.5">Narrow the match by shape</p>
+                  </div>
+                  <button type="button" onClick={onOpenIdentifyView}
+                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-all">
+                    Full tool
+                  </button>
+                </div>
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+                  <h3 className="text-sm font-bold text-white mb-0.5">{topMatch?.name || "No species selected"}</h3>
+                  <p className="text-xs text-white/40 mb-3 italic">{topMatch?.scientificName || "Adjust filters to find species."}</p>
+                  <button type="button" onClick={onOpenIdentifyView}
+                    className="w-full py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:brightness-105 transition-all">
+                    Identify Species
+                  </button>
+                  <p className="text-[10px] text-white/25 text-center mt-2">Pick body & tail shape to narrow results</p>
+                </div>
+              </div>
+
+              {/* Protected species */}
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-5 shadow-xl">
+                <h2 className="text-base font-extrabold text-white mb-4">Protected Species Nearby</h2>
+                <div className="flex flex-col gap-2">
+                  {protectedSpecies.map((item) => (
+                    <div key={item._id || item.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] transition-all">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                        <p className="text-xs text-white/35 italic truncate">{item.scientificName}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${
+                        item.isFullyBanned ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
+                      }`}>
+                        {item.isFullyBanned ? "Banned" : item.protectionStatus}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Incident map */}
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-5 shadow-xl">
+                <h2 className="text-base font-extrabold text-white mb-3">Incident Map</h2>
+                <div className="rounded-2xl border border-white/10 bg-cyan-500/5 px-5 py-6 text-center">
+                  <MapPin size={24} className="text-cyan-400/50 mx-auto mb-2" />
+                  <p className="text-2xl font-extrabold text-white">{last30DaysIncidents}</p>
+                  <p className="text-xs text-white/40 mt-1">incidents near you</p>
+                  <p className="text-[10px] text-white/20 mt-0.5">Sri Lanka · last 30 days</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// IDENTIFY VIEW
+// ─────────────────────────────────────────────────────────────
+function IdentifyView({
+  speciesCatalog, identifyQuery, setIdentifyQuery,
+  identifyBodyShape, setIdentifyBodyShape,
+  identifyTailShape, setIdentifyTailShape,
+  identifyMatches, identifyFilterSummary, identifySuggestions,
+  selectedIdentifySpeciesId, setSelectedIdentifySpeciesId,
+  selectedIdentifySpecies, brokenIdentifyImages, setBrokenIdentifyImages,
+  onBack,
+}) {
+  const identifyBodyShapeOptions = IDENTIFY_BODY_SHAPES;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E3A5F] to-[#0C1423] relative">
+      <div className="absolute w-[380px] h-[380px] rounded-full blur-[70px] bg-blue-500/20 -top-[120px] -left-[100px] pointer-events-none" />
+
+      <div className="relative z-10 max-w-[1180px] mx-auto px-6 py-8">
+
+        {/* Header */}
+        <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-6 py-5 mb-6 shadow-xl">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] border border-white/10 bg-white/5 text-cyan-400 mb-3">
+                <Fish size={12} /> Species Identifier
+              </div>
+              <h1 className="text-[28px] font-extrabold tracking-tight text-white">Identify Species</h1>
+              <p className="text-sm text-white/40 mt-1">Search by name or filter by body and tail shape</p>
+            </div>
+            <button type="button" onClick={onBack}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all">
+              ← Back
+            </button>
+          </div>
+        </div>
+
+        {/* Search + filters */}
+        <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 mb-6 shadow-xl">
+          {/* Search */}
+          <div className="relative mb-5">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <input
+              type="text" value={identifyQuery} onChange={(e) => setIdentifyQuery(e.target.value)}
+              placeholder="Search by fish name e.g. Tuna, Mackerel, Coral Trout…"
+              className="w-full rounded-2xl py-3 pl-10 pr-4 text-sm outline-none bg-white/5 border border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50"
+            />
+            {identifyQuery.trim() && identifySuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-[rgba(6,15,30,0.97)] border border-white/15 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-20">
+                {identifySuggestions.map((item) => (
+                  <button key={toSpeciesKey(item)} type="button"
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-white/5 transition-all text-white/70 hover:text-white"
+                    onClick={() => { setIdentifyQuery(item.name || ""); setSelectedIdentifySpeciesId(toSpeciesKey(item)); }}>
+                    <strong className="font-semibold text-white">{item.name}</strong>
+                    <span className="text-xs text-white/35 italic">{item.scientificName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Body shape filter */}
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Body Shape</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setIdentifyBodyShape("")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${!identifyBodyShape ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                All
+              </button>
+              {identifyBodyShapeOptions.map((shape) => (
+                <button key={shape} type="button" onClick={() => setIdentifyBodyShape(shape)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${identifyBodyShape === shape ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                  {shape}
+                </button>
+              ))}
+            </div>
+            {identifyBodyShape && BODY_SHAPE_REFERENCES[identifyBodyShape] && (
+              <div className="mt-3 flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/10">
+                <img src={BODY_SHAPE_REFERENCES[identifyBodyShape].image} alt={`${identifyBodyShape} reference`} className="w-16 h-12 object-cover rounded-xl" />
+                <p className="text-xs text-white/50">{BODY_SHAPE_REFERENCES[identifyBodyShape].description}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Tail shape filter */}
+          <div>
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Tail Shape</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setIdentifyTailShape("")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${!identifyTailShape ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                All
+              </button>
+              {TAIL_SHAPES.map((shape) => (
+                <button key={shape} type="button" onClick={() => setIdentifyTailShape(shape)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${identifyTailShape === shape ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                  {toTitleCase(shape)}
+                </button>
+              ))}
+            </div>
+            {identifyTailShape && TAIL_SHAPE_REFERENCES[toTitleCase(identifyTailShape)] && (
+              <div className="mt-3 flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/10">
+                <img src={TAIL_SHAPE_REFERENCES[toTitleCase(identifyTailShape)].image} alt={`${identifyTailShape} reference`} className="w-16 h-12 object-cover rounded-xl" />
+                <p className="text-xs text-white/50">{TAIL_SHAPE_REFERENCES[toTitleCase(identifyTailShape)].description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Results */}
+        {identifyMatches.length === 0 ? (
+          <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-6 py-16 text-center shadow-xl">
+            <Fish size={32} className="text-white/10 mx-auto mb-3" />
+            <p className="text-white/40 text-sm">No species found. Try another name, body shape, or tail shape.</p>
+          </div>
+        ) : (
+          <>
+            {identifyFilterSummary && (
+              <p className="text-xs text-white/30 mb-3 px-1">Showing species for {identifyFilterSummary}</p>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 mb-6">
+              {identifyMatches.map((item) => {
+                const key      = toSpeciesKey(item);
+                const isActive = selectedIdentifySpeciesId === key;
+                const imgUrl   = resolveSpeciesImageUrl(item);
+                return (
+                  <button key={key} type="button" onClick={() => setSelectedIdentifySpeciesId(key)}
+                    className={`flex flex-col rounded-2xl overflow-hidden border transition-all text-left ${
+                      isActive
+                        ? "border-cyan-500/50 bg-cyan-500/10 shadow-[0_0_0_2px_rgba(34,211,238,0.2)]"
+                        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/20"
+                    }`}>
+                    {imgUrl && !brokenIdentifyImages[key] ? (
+                      <img src={imgUrl} alt={item.name || "Species"} className="w-full h-24 object-cover"
+                        onError={() => setBrokenIdentifyImages((p) => ({ ...p, [key]: true }))} />
+                    ) : (
+                      <div className="w-full h-24 flex items-center justify-center bg-white/5 text-white/15 text-xs">No Image</div>
+                    )}
+                    <div className="p-2.5">
+                      <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                      <p className="text-[10px] text-white/35 italic truncate mb-2">{item.scientificName}</p>
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">{formatBodyShapeLabel(item.bodyShape)}</span>
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${item.isFullyBanned ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-400"}`}>
+                          {item.isFullyBanned ? "Banned" : item.protectionStatus || "Unknown"}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Detail card */}
+        {selectedIdentifySpecies && (
+          <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl overflow-hidden shadow-xl">
+            <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-600" />
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {resolveSpeciesImageUrl(selectedIdentifySpecies) && !brokenIdentifyImages[toSpeciesKey(selectedIdentifySpecies)] && (
+                  <img
+                    src={resolveSpeciesImageUrl(selectedIdentifySpecies)}
+                    alt={selectedIdentifySpecies.name || "Species"}
+                    className="w-full md:w-48 h-40 object-cover rounded-2xl flex-shrink-0"
+                    onError={() => { const k = toSpeciesKey(selectedIdentifySpecies); setBrokenIdentifyImages((p) => ({ ...p, [k]: true })); }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <h3 className="text-xl font-extrabold text-white">{selectedIdentifySpecies.name}</h3>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${selectedIdentifySpecies.isFullyBanned ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>
+                      {selectedIdentifySpecies.isFullyBanned ? "Fully Banned" : selectedIdentifySpecies.protectionStatus || "Unknown"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-white/40 italic mb-4">{selectedIdentifySpecies.scientificName}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                      { label: "Body Shape",   value: formatBodyShapeLabel(selectedIdentifySpecies.bodyShape) },
+                      { label: "Tail Shape",   value: selectedIdentifySpecies.tailShape ? toTitleCase(selectedIdentifySpecies.tailShape) : "Unknown" },
+                      { label: "Fin Type",     value: selectedIdentifySpecies.finType || "Not specified" },
+                      { label: "Color Pattern",value: selectedIdentifySpecies.colorPattern || "Not specified" },
+                      { label: "Legal Min Size",value: selectedIdentifySpecies.legalMinSizeCm ? `${selectedIdentifySpecies.legalMinSizeCm} cm` : "Not specified" },
+                      { label: "Legal Season", value: formatMonthRange(selectedIdentifySpecies.legalSeason) },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
+                        <p className="text-[10px] text-white/35 uppercase tracking-widest font-semibold mb-0.5">{label}</p>
+                        <p className="text-sm font-semibold text-white/80">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {(selectedIdentifySpecies.regions?.length > 0 || selectedIdentifySpecies.description) && (
+                    <div className="mt-4 space-y-2">
+                      {selectedIdentifySpecies.regions?.length > 0 && (
+                        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
+                          <p className="text-[10px] text-white/35 uppercase tracking-widest font-semibold mb-0.5">Regions</p>
+                          <p className="text-sm text-white/70">{selectedIdentifySpecies.regions.join(", ")}</p>
+                        </div>
+                      )}
+                      {selectedIdentifySpecies.description && (
+                        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
+                          <p className="text-[10px] text-white/35 uppercase tracking-widest font-semibold mb-0.5">Description</p>
+                          <p className="text-sm text-white/70 leading-relaxed">{selectedIdentifySpecies.description.trim()}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// REPORT MODAL
+// ─────────────────────────────────────────────────────────────
+function ReportModal({
+  speciesCatalog, complaintForm, updateComplaintField,
+  complaintGuess, updateComplaintGuess, complaintEvidence, updateComplaintEvidence,
+  complaintStatus, submitComplaint, closeComplaintModal, setCurrentLocation,
+  guessedSpeciesMatches,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[rgba(6,15,30,0.97)] border border-white/20 rounded-3xl shadow-2xl">
+        <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-600" />
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] border border-white/10 bg-white/5 text-cyan-400 mb-2">
+                <AlertTriangle size={12} /> New Report
+              </div>
+              <h2 className="text-xl font-extrabold text-white">Create Illegal Fish Report</h2>
+            </div>
+            <button type="button" onClick={closeComplaintModal}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/50 hover:text-white">
+              <X size={16} />
+            </button>
+          </div>
+
+          <form onSubmit={submitComplaint} className="flex flex-col gap-4">
+
+            {/* Incident type */}
+            <div>
+              <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">Incident Type</label>
+              <select value={complaintForm.incidentType} onChange={(e) => updateComplaintField("incidentType", e.target.value)}
+                className="w-full rounded-2xl py-2.5 px-3 text-sm outline-none bg-white/5 border border-white/10 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 appearance-none">
+                {INCIDENT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">Description</label>
+              <textarea rows={4} minLength={20} required
+                placeholder="Describe what happened, vessel type, time, and severity…"
+                value={complaintForm.description} onChange={(e) => updateComplaintField("description", e.target.value)}
+                className="w-full rounded-2xl py-2.5 px-3 text-sm outline-none resize-none bg-white/5 border border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50" />
+            </div>
+
+            {/* Coordinates */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Latitude",  field: "latitude",  placeholder: "6.9271"  },
+                { label: "Longitude", field: "longitude", placeholder: "79.8612" },
+              ].map(({ label, field, placeholder }) => (
+                <div key={field}>
+                  <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">{label}</label>
+                  <input type="number" step="any" required placeholder={placeholder}
+                    value={complaintForm[field]} onChange={(e) => updateComplaintField(field, e.target.value)}
+                    className="w-full rounded-2xl py-2.5 px-3 text-sm outline-none bg-white/5 border border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50" />
+                </div>
+              ))}
+            </div>
+
+            {/* Date + Species */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">Incident Date</label>
+                <input type="datetime-local" value={complaintForm.incidentDate} onChange={(e) => updateComplaintField("incidentDate", e.target.value)}
+                  className="w-full rounded-2xl py-2.5 px-3 text-sm outline-none bg-white/5 border border-white/10 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">Species (optional)</label>
+                <select value={complaintForm.speciesId} onChange={(e) => updateComplaintField("speciesId", e.target.value)}
+                  className="w-full rounded-2xl py-2.5 px-3 text-sm outline-none bg-white/5 border border-white/10 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 appearance-none">
+                  <option value="">Not sure</option>
+                  {speciesCatalog.map((item) => <option key={item._id || item.id} value={item._id || item.id}>{item.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Species helper */}
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+              <p className="text-sm font-bold text-white mb-0.5">Not sure which species?</p>
+              <p className="text-xs text-white/40 mb-3">Filter by body and tail shape to find likely species.</p>
+              {[
+                { label: "Body Shape", field: "bodyShape", shapes: BODY_SHAPES },
+                { label: "Tail Shape", field: "tailShape", shapes: TAIL_SHAPES },
+              ].map(({ label, field, shapes }) => (
+                <div key={field} className="mb-3 last:mb-0">
+                  <p className="text-[10px] font-semibold text-white/35 uppercase tracking-widest mb-2">{label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {shapes.map((shape) => (
+                      <button key={shape} type="button" onClick={() => updateComplaintGuess(field, shape)}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all ${
+                          complaintGuess[field] === shape
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+                            : "bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+                        }`}>
+                        {toTitleCase(shape)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {guessedSpeciesMatches.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {guessedSpeciesMatches.map((item) => {
+                    const selected = complaintForm.speciesId === (item._id || item.id);
+                    return (
+                      <button key={item._id || item.id} type="button" onClick={() => updateComplaintField("speciesId", item._id || item.id)}
+                        className={`flex flex-col px-3 py-2 rounded-xl text-left transition-all ${
+                          selected
+                            ? "bg-cyan-500/15 border border-cyan-500/40 text-cyan-400"
+                            : "bg-white/[0.03] border border-white/10 text-white/60 hover:bg-white/[0.06]"
+                        }`}>
+                        <span className="text-xs font-bold">{item.name}</span>
+                        <span className="text-[10px] italic opacity-60">{item.scientificName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {guessedSpeciesMatches.length === 0 && (complaintGuess.bodyShape || complaintGuess.tailShape) && (
+                <p className="text-xs text-white/25 mt-2">No species matches for this shape combination.</p>
+              )}
+            </div>
+
+            {/* Evidence */}
+            <div>
+              <label className="block text-xs font-semibold text-cyan-400/80 mb-1.5 uppercase tracking-widest">Evidence (optional, up to 5 files)</label>
+              <input type="file" multiple accept="image/*,video/*" onChange={(e) => updateComplaintEvidence(e.target.files)}
+                className="w-full rounded-2xl py-2.5 px-3 text-sm bg-white/5 border border-white/10 text-white/60 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-400 cursor-pointer" />
+              <p className="text-xs text-white/30 mt-1.5">
+                {complaintEvidence.length > 0 ? `Selected: ${complaintEvidence.map((f) => f.name).join(", ")}` : "No evidence selected."}
+              </p>
+            </div>
+
+            {complaintStatus.error && (
+              <div className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">{complaintStatus.error}</div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={closeComplaintModal}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-semibold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-all">
+                Cancel
+              </button>
+              <button type="button" onClick={setCurrentLocation}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-semibold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-all">
+                📍 My Location
+              </button>
+              <button type="submit" disabled={complaintStatus.loading}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(6,182,212,0.30)] hover:brightness-105 transition-all disabled:opacity-70">
+                {complaintStatus.loading ? "Submitting…" : "Submit Report"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [activeView, setActiveView] = useState("dashboard");
-  const [reports, setReports] = useState([]);
-  const [speciesCatalog, setSpeciesCatalog] = useState([]);
+  const [isLoggingOut, setIsLoggingOut]       = useState(false);
+  const [activeView, setActiveView]           = useState("dashboard");
+  const [reports, setReports]                 = useState([]);
+  const [speciesCatalog, setSpeciesCatalog]   = useState([]);
   const [identifierResult, setIdentifierResult] = useState([]);
-  const [filters, setFilters] = useState({ bodyShape: "torpedo", tailShape: "crescent" });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [filters, setFilters]                 = useState({ bodyShape: "torpedo", tailShape: "crescent" });
+  const [isLoading, setIsLoading]             = useState(true);
+  const [error, setError]                     = useState("");
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
   const [complaintStatus, setComplaintStatus] = useState({ loading: false, error: "", success: "" });
   const [complaintEvidence, setComplaintEvidence] = useState([]);
-  const [complaintGuess, setComplaintGuess] = useState({ bodyShape: "", tailShape: "" });
-  const [complaintForm, setComplaintForm] = useState({
-    incidentType: INCIDENT_TYPES[0],
-    description: "",
-    latitude: "",
-    longitude: "",
-    incidentDate: new Date().toISOString().slice(0, 16),
-    speciesId: "",
+  const [complaintGuess, setComplaintGuess]   = useState({ bodyShape: "", tailShape: "" });
+  const [complaintForm, setComplaintForm]     = useState({
+    incidentType: INCIDENT_TYPES[0], description: "", latitude: "", longitude: "",
+    incidentDate: new Date().toISOString().slice(0, 16), speciesId: "",
   });
-  const [identifyQuery, setIdentifyQuery] = useState("");
-  const [identifyBodyShape, setIdentifyBodyShape] = useState("");
-  const [identifyTailShape, setIdentifyTailShape] = useState("");
+  const [identifyQuery, setIdentifyQuery]             = useState("");
+  const [identifyBodyShape, setIdentifyBodyShape]     = useState("");
+  const [identifyTailShape, setIdentifyTailShape]     = useState("");
   const [selectedIdentifySpeciesId, setSelectedIdentifySpeciesId] = useState("");
   const [brokenIdentifyImages, setBrokenIdentifyImages] = useState({});
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-
-  // ✅ EditProfile modal state — properly inside the component
-  const [showEditProfile, setShowEditProfile] = useState(false);
-
+  const [isProfileMenuOpen, setIsProfileMenuOpen]     = useState(false);
+  const [showEditProfile, setShowEditProfile]         = useState(false);
   const profileMenuRef = useRef(null);
 
-  const token = useMemo(() => tokenFromStorage(), []);
+  const token       = useMemo(() => tokenFromStorage(), []);
   const userPayload = useMemo(() => decodeJwtPayload(token), [token]);
-  const firstName = userPayload?.firstName || "Fisher";
+  const firstName   = userPayload?.firstName || "Fisher";
 
   useEffect(() => {
     if (!token || !userPayload) navigate("/login", { replace: true });
@@ -378,9 +813,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        setIsProfileMenuOpen(false);
-      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) setIsProfileMenuOpen(false);
     }
     if (isProfileMenuOpen) {
       document.addEventListener("click", handleClickOutside);
@@ -389,82 +822,55 @@ export default function UserDashboard() {
   }, [isProfileMenuOpen]);
 
   const loadDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true); setError("");
     try {
       const speciesData = await fetchJson("/species", token);
       setSpeciesCatalog(Array.isArray(speciesData) ? speciesData : []);
       if (token) {
         const reportsData = await fetchJson("/reports/my", token);
         setReports(Array.isArray(reportsData?.reports) ? reportsData.reports : []);
-      } else {
-        setReports([]);
-      }
-    } catch (loadError) {
-      setError(loadError.message || "Unable to load dashboard data.");
-    } finally {
-      setIsLoading(false);
-    }
+      } else { setReports([]); }
+    } catch (e) {
+      setError(e.message || "Unable to load dashboard data.");
+    } finally { setIsLoading(false); }
   }, [token]);
 
   useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
 
   useEffect(() => {
     let ignore = false;
-    const findFish = async () => {
+    (async () => {
       const params = new URLSearchParams(filters);
       try {
         const data = await fetchJson(`/species/find?${params.toString()}`, token);
         if (!ignore) setIdentifierResult(Array.isArray(data?.species) ? data.species : []);
-      } catch {
-        if (!ignore) setIdentifierResult([]);
-      }
-    };
-    findFish();
+      } catch { if (!ignore) setIdentifierResult([]); }
+    })();
     return () => { ignore = true; };
   }, [filters, token]);
 
-  const reportCount = reports.length;
-  const underReviewCount = reports.filter((item) => ["Pending", "Under Review"].includes(item.status)).length;
-
-  const identifiedSpeciesCount = useMemo(() => {
-    const speciesSet = new Set();
-    reports.forEach((report) => {
-      (report.speciesInvolved || []).forEach((entry) => {
-        const id = entry?._id || entry?.id || entry;
-        if (id) speciesSet.add(id);
-      });
-    });
-    return speciesSet.size;
+  // Computed
+  const reportCount             = reports.length;
+  const underReviewCount        = reports.filter((r) => ["Pending", "Under Review"].includes(r.status)).length;
+  const identifiedSpeciesCount  = useMemo(() => {
+    const s = new Set();
+    reports.forEach((r) => (r.speciesInvolved || []).forEach((e) => { const id = e?._id || e?.id || e; if (id) s.add(id); }));
+    return s.size;
   }, [reports]);
-
-  const recentReports = reports.slice(0, 3);
-
-  const protectedSpecies = useMemo(() =>
-    speciesCatalog.filter((item) => ["Protected", "Endangered", "Critically Endangered", "Banned"].includes(item.protectionStatus)).slice(0, 3),
-    [speciesCatalog]
-  );
-
-  const last30DaysIncidents = useMemo(() => {
-    const threshold = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return reports.filter((item) => new Date(item.createdAt).getTime() >= threshold).length;
-  }, [reports]);
-
-  const topMatch = identifierResult[0];
+  const recentReports           = reports.slice(0, 3);
+  const protectedSpecies        = useMemo(() => speciesCatalog.filter((i) => ["Protected", "Endangered", "Critically Endangered", "Banned"].includes(i.protectionStatus)).slice(0, 3), [speciesCatalog]);
+  const last30DaysIncidents     = useMemo(() => { const t = Date.now() - 30*24*60*60*1000; return reports.filter((r) => new Date(r.createdAt).getTime() >= t).length; }, [reports]);
+  const topMatch                = identifierResult[0];
 
   const identifyMatches = useMemo(() => {
-    const query = identifyQuery.trim().toLowerCase();
-    const selectedBodyShape = normalizeSpeciesBodyShape(identifyBodyShape);
-    const selectedTailShape = normalizeIdentifyShape(identifyTailShape);
+    const query  = identifyQuery.trim().toLowerCase();
+    const selBody = normalizeSpeciesBodyShape(identifyBodyShape);
+    const selTail = normalizeIdentifyShape(identifyTailShape);
     return speciesCatalog.filter((item) => {
-      const itemBodyShape = normalizeSpeciesBodyShape(item.bodyShape);
-      const itemTailShape = normalizeIdentifyShape(item.tailShape);
-      if (selectedBodyShape && itemBodyShape !== selectedBodyShape) return false;
-      if (selectedTailShape && itemTailShape !== selectedTailShape) return false;
+      if (selBody && normalizeSpeciesBodyShape(item.bodyShape) !== selBody) return false;
+      if (selTail && normalizeIdentifyShape(item.tailShape) !== selTail) return false;
       if (!query) return true;
-      const commonName = (item.name || "").toLowerCase();
-      const scientificName = (item.scientificName || "").toLowerCase();
-      return commonName.includes(query) || scientificName.includes(query);
+      return (item.name||"").toLowerCase().includes(query) || (item.scientificName||"").toLowerCase().includes(query);
     }).slice(0, 18);
   }, [identifyBodyShape, identifyTailShape, identifyQuery, speciesCatalog]);
 
@@ -482,82 +888,46 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (identifyMatches.length === 0) { setSelectedIdentifySpeciesId(""); return; }
-    const hasSelection = identifyMatches.some((item) => toSpeciesKey(item) === selectedIdentifySpeciesId);
-    if (!hasSelection) setSelectedIdentifySpeciesId(toSpeciesKey(identifyMatches[0]));
+    if (!identifyMatches.some((item) => toSpeciesKey(item) === selectedIdentifySpeciesId)) setSelectedIdentifySpeciesId(toSpeciesKey(identifyMatches[0]));
   }, [identifyMatches, selectedIdentifySpeciesId]);
-
-  const identifyBodyShapeOptions = useMemo(() => IDENTIFY_BODY_SHAPES, []);
 
   const identifySuggestions = useMemo(() => {
     const query = identifyQuery.trim().toLowerCase();
     if (!query) return [];
-    return speciesCatalog.filter((item) => {
-      const commonName = (item.name || "").toLowerCase();
-      const scientificName = (item.scientificName || "").toLowerCase();
-      return commonName.includes(query) || scientificName.includes(query);
-    }).sort((a, b) => {
-      const aName = (a.name || "").toLowerCase();
-      const bName = (b.name || "").toLowerCase();
-      const aStarts = aName.startsWith(query) ? 0 : 1;
-      const bStarts = bName.startsWith(query) ? 0 : 1;
-      if (aStarts !== bStarts) return aStarts - bStarts;
-      return aName.localeCompare(bName);
-    }).slice(0, 6);
+    return speciesCatalog.filter((item) => (item.name||"").toLowerCase().includes(query) || (item.scientificName||"").toLowerCase().includes(query))
+      .sort((a, b) => {
+        const aS = (a.name||"").toLowerCase().startsWith(query) ? 0 : 1;
+        const bS = (b.name||"").toLowerCase().startsWith(query) ? 0 : 1;
+        return aS !== bS ? aS - bS : (a.name||"").localeCompare(b.name||"");
+      }).slice(0, 6);
   }, [identifyQuery, speciesCatalog]);
 
   const guessedSpeciesMatches = useMemo(() => {
-    const byBody = complaintGuess.bodyShape ? speciesCatalog.filter((item) => item.bodyShape === complaintGuess.bodyShape) : speciesCatalog;
-    const byTail = complaintGuess.tailShape ? byBody.filter((item) => item.tailShape === complaintGuess.tailShape) : byBody;
-    return byTail.slice(0, 6);
+    const byBody = complaintGuess.bodyShape ? speciesCatalog.filter((i) => i.bodyShape === complaintGuess.bodyShape) : speciesCatalog;
+    return (complaintGuess.tailShape ? byBody.filter((i) => i.tailShape === complaintGuess.tailShape) : byBody).slice(0, 6);
   }, [complaintGuess, speciesCatalog]);
-
-  const openComplaintModal = () => { setComplaintStatus({ loading: false, error: "", success: "" }); setIsComplaintOpen(true); };
-  const openIdentifyView = () => setActiveView("identify");
-  const openDashboardView = () => setActiveView("dashboard");
-  const onViewMyReports = () => navigate("/my-reports");
-  const onViewReportForm = () => navigate("/report-form");
-  const toggleProfileMenu = () => setIsProfileMenuOpen((prev) => !prev);
-
-  // ✅ Opens EditProfile modal
-  const handleViewProfile = () => {
-    setIsProfileMenuOpen(false);
-    setShowEditProfile(true);
-  };
 
   const handleLogout = () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     setIsProfileMenuOpen(false);
-    const keys = ["token", "authToken", "accessToken", "jwt", "user", "userData", "role"];
-    keys.forEach((key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); });
-    localStorage.clear();
-    sessionStorage.clear();
-    document.cookie.split(";").forEach((cookie) => {
-      const eqPos = cookie.indexOf("=");
-      const name = eqPos > -1 ? cookie.slice(0, eqPos).trim() : cookie.trim();
-      if (name) document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-    });
-    fetch(`${API_BASE_URL}/users/logout`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      credentials: "include",
-      keepalive: true,
-    }).catch(() => {});
+    ["token","authToken","accessToken","jwt","user","userData","role"].forEach((k) => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
+    localStorage.clear(); sessionStorage.clear();
+    document.cookie.split(";").forEach((c) => { const n = c.indexOf("=") > -1 ? c.slice(0, c.indexOf("=")).trim() : c.trim(); if (n) document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`; });
+    fetch(`${API_BASE_URL}/users/logout`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: "include", keepalive: true }).catch(() => {});
     navigate("/login", { replace: true });
     window.location.replace("/login");
   };
 
-  const closeComplaintModal = () => { if (complaintStatus.loading) return; setIsComplaintOpen(false); };
-  const updateComplaintField = (field, value) => setComplaintForm((prev) => ({ ...prev, [field]: value }));
-  const updateComplaintGuess = (field, value) => setComplaintGuess((prev) => ({ ...prev, [field]: value }));
+  const updateComplaintField    = (field, value) => setComplaintForm((p) => ({ ...p, [field]: value }));
+  const updateComplaintGuess    = (field, value) => setComplaintGuess((p) => ({ ...p, [field]: value }));
   const updateComplaintEvidence = (files) => setComplaintEvidence(Array.from(files || []).slice(0, 5));
-
-  const setCurrentLocation = () => {
-    if (!navigator.geolocation) { setComplaintStatus((prev) => ({ ...prev, error: "Geolocation is not available in this browser." })); return; }
-    setComplaintStatus((prev) => ({ ...prev, error: "", success: "" }));
+  const setCurrentLocation      = () => {
+    if (!navigator.geolocation) { setComplaintStatus((p) => ({ ...p, error: "Geolocation not available." })); return; }
+    setComplaintStatus((p) => ({ ...p, error: "", success: "" }));
     navigator.geolocation.getCurrentPosition(
-      (position) => setComplaintForm((prev) => ({ ...prev, latitude: String(position.coords.latitude.toFixed(6)), longitude: String(position.coords.longitude.toFixed(6)) })),
-      () => setComplaintStatus((prev) => ({ ...prev, error: "Unable to fetch your location. Please enter coordinates manually." }))
+      (pos) => setComplaintForm((p) => ({ ...p, latitude: String(pos.coords.latitude.toFixed(6)), longitude: String(pos.coords.longitude.toFixed(6)) })),
+      () => setComplaintStatus((p) => ({ ...p, error: "Unable to fetch location. Please enter manually." }))
     );
   };
 
@@ -566,46 +936,49 @@ export default function UserDashboard() {
     if (complaintForm.description.trim().length < 20) { setComplaintStatus({ loading: false, error: "Description must be at least 20 characters.", success: "" }); return; }
     if (!complaintForm.latitude || !complaintForm.longitude) { setComplaintStatus({ loading: false, error: "Location coordinates are required.", success: "" }); return; }
     setComplaintStatus({ loading: true, error: "", success: "" });
-    const formData = new FormData();
-    formData.append("incidentType", complaintForm.incidentType);
-    formData.append("description", complaintForm.description.trim());
-    formData.append("latitude", complaintForm.latitude.trim());
-    formData.append("longitude", complaintForm.longitude.trim());
-    if (complaintForm.incidentDate) formData.append("incidentDate", new Date(complaintForm.incidentDate).toISOString());
-    if (complaintForm.speciesId) formData.append("speciesInvolved", JSON.stringify([complaintForm.speciesId]));
-    complaintEvidence.forEach((file) => formData.append("evidence", file));
+    const fd = new FormData();
+    fd.append("incidentType",  complaintForm.incidentType);
+    fd.append("description",   complaintForm.description.trim());
+    fd.append("latitude",      complaintForm.latitude.trim());
+    fd.append("longitude",     complaintForm.longitude.trim());
+    if (complaintForm.incidentDate) fd.append("incidentDate", new Date(complaintForm.incidentDate).toISOString());
+    if (complaintForm.speciesId)    fd.append("speciesInvolved", JSON.stringify([complaintForm.speciesId]));
+    complaintEvidence.forEach((file) => fd.append("evidence", file));
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await fetch(`${API_BASE_URL}/reports`, { method: "POST", headers, body: formData });
-      let payload = null;
-      try { payload = await response.json(); } catch { payload = null; }
-      if (!response.ok) throw new Error(payload?.message || "Failed to submit report.");
+      const res = await fetch(`${API_BASE_URL}/reports`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd });
+      let payload = null; try { payload = await res.json(); } catch {}
+      if (!res.ok) throw new Error(payload?.message || "Failed to submit report.");
       setComplaintStatus({ loading: false, error: "", success: "Report submitted successfully." });
       setComplaintForm({ incidentType: INCIDENT_TYPES[0], description: "", latitude: "", longitude: "", incidentDate: new Date().toISOString().slice(0, 16), speciesId: "" });
       setComplaintGuess({ bodyShape: "", tailShape: "" });
       setComplaintEvidence([]);
       setIsComplaintOpen(false);
       await loadDashboardData();
-    } catch (submitError) {
-      setComplaintStatus({ loading: false, error: submitError.message || "Failed to submit report.", success: "" });
+    } catch (e) {
+      setComplaintStatus({ loading: false, error: e.message || "Failed to submit report.", success: "" });
     }
   };
 
   return (
-    <main className="dashboard-shell">
-
-      {/* ✅ EditProfile Modal — properly placed at the top level */}
+    <main>
+      {/* EditProfile Modal */}
       {showEditProfile && (
-        <EditProfile
-          onClose={() => setShowEditProfile(false)}
-          onUpdated={(updatedUser) => {
-            console.log("Profile updated:", updatedUser);
-            setShowEditProfile(false);
-          }}
-        />
+        <EditProfile onClose={() => setShowEditProfile(false)} onUpdated={(u) => { console.log("Profile updated:", u); setShowEditProfile(false); }} />
       )}
 
-      {activeView === "dashboard" ? (
+      {/* Banners */}
+      {error && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm shadow-2xl backdrop-blur-xl">
+          <AlertTriangle size={14} className="inline mr-2" />{error}
+        </div>
+      )}
+      {complaintStatus.success && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm shadow-2xl backdrop-blur-xl">
+          <CheckCircle size={14} className="inline mr-2" />{complaintStatus.success}
+        </div>
+      )}
+
+      {activeView === "dashboard" && (
         <DashboardHome
           firstName={firstName}
           isLoading={isLoading}
@@ -616,200 +989,49 @@ export default function UserDashboard() {
           protectedSpecies={protectedSpecies}
           topMatch={topMatch}
           last30DaysIncidents={last30DaysIncidents}
-          onOpenComplaintModal={openComplaintModal}
-          onOpenIdentifyView={openIdentifyView}
-          onViewMyReports={onViewMyReports}
-          onViewReportForm={onViewReportForm}
+          onOpenComplaintModal={() => { setComplaintStatus({ loading: false, error: "", success: "" }); setIsComplaintOpen(true); }}
+          onOpenIdentifyView={() => setActiveView("identify")}
+          onViewMyReports={() => navigate("/my-reports")}
+          onViewReportForm={() => navigate("/report-form")}
           isProfileMenuOpen={isProfileMenuOpen}
-          onToggleProfileMenu={toggleProfileMenu}
-          onViewProfile={handleViewProfile}
+          onToggleProfileMenu={() => setIsProfileMenuOpen((p) => !p)}
+          onViewProfile={() => { setIsProfileMenuOpen(false); setShowEditProfile(true); }}
           onLogout={handleLogout}
           profileMenuRef={profileMenuRef}
         />
-      ) : null}
+      )}
 
-      {error ? <p className="error-banner">{error}</p> : null}
-      {complaintStatus.success ? <p className="success-banner">{complaintStatus.success}</p> : null}
+      {activeView === "identify" && (
+        <IdentifyView
+          speciesCatalog={speciesCatalog}
+          identifyQuery={identifyQuery}             setIdentifyQuery={setIdentifyQuery}
+          identifyBodyShape={identifyBodyShape}     setIdentifyBodyShape={setIdentifyBodyShape}
+          identifyTailShape={identifyTailShape}     setIdentifyTailShape={setIdentifyTailShape}
+          identifyMatches={identifyMatches}
+          identifyFilterSummary={identifyFilterSummary}
+          identifySuggestions={identifySuggestions}
+          selectedIdentifySpeciesId={selectedIdentifySpeciesId}
+          setSelectedIdentifySpeciesId={setSelectedIdentifySpeciesId}
+          selectedIdentifySpecies={selectedIdentifySpecies}
+          brokenIdentifyImages={brokenIdentifyImages}
+          setBrokenIdentifyImages={setBrokenIdentifyImages}
+          onBack={() => setActiveView("dashboard")}
+        />
+      )}
 
-      {activeView === "identify" ? (
-        <section className="identify-shell card-reveal delay-2">
-          <div className="section-head">
-            <h2>Identify Species</h2>
-            <button className="inline-link" type="button" onClick={openDashboardView}>Back to dashboard →</button>
-          </div>
-          <p className="identify-note">Search by fish name. If you are not sure, select body shape to narrow the results.</p>
-          <label className="identify-label" htmlFor="identify-search">Search by fish name</label>
-          <input id="identify-search" className="identify-input" type="text" placeholder="e.g. Tuna, Mackerel, Coral Trout" value={identifyQuery} onChange={(e) => setIdentifyQuery(e.target.value)} />
-          {identifyQuery.trim() && identifySuggestions.length > 0 ? (
-            <div className="identify-suggestion-list" role="listbox" aria-label="Species suggestions">
-              {identifySuggestions.map((item) => (
-                <button key={`identify-suggestion-${item._id || item.id || item.name}`} type="button" className="identify-suggestion-item"
-                  onClick={() => { setIdentifyQuery(item.name || ""); setSelectedIdentifySpeciesId(toSpeciesKey(item)); }}>
-                  <strong>{item.name}</strong>
-                  <span>{item.scientificName}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <div className="identify-filters">
-            <p>Body shape</p>
-            <div className="pills">
-              <button type="button" className={`pill ${identifyBodyShape === "" ? "pill-active" : ""}`} onClick={() => setIdentifyBodyShape("")}>All</button>
-              {identifyBodyShapeOptions.map((shape) => (
-                <button key={`identify-${shape}`} type="button" className={`pill ${identifyBodyShape === shape ? "pill-active" : ""}`} onClick={() => setIdentifyBodyShape(shape)}>{shape}</button>
-              ))}
-            </div>
-            {identifyBodyShape && BODY_SHAPE_REFERENCES[identifyBodyShape] ? (
-              <div className="body-shape-reference">
-                <img src={BODY_SHAPE_REFERENCES[identifyBodyShape].image} alt={`${identifyBodyShape} body shape reference`} className="body-shape-reference-image" />
-                <p className="body-shape-reference-text">{BODY_SHAPE_REFERENCES[identifyBodyShape].description}</p>
-              </div>
-            ) : null}
-          </div>
-          <div className="identify-filters">
-            <p>Tail shape</p>
-            <div className="pills">
-              <button type="button" className={`pill ${identifyTailShape === "" ? "pill-active" : ""}`} onClick={() => setIdentifyTailShape("")}>All</button>
-              {TAIL_SHAPES.map((shape) => (
-                <button key={`identify-tail-${shape}`} type="button" className={`pill ${identifyTailShape === shape ? "pill-active" : ""}`} onClick={() => setIdentifyTailShape(shape)}>{toTitleCase(shape)}</button>
-              ))}
-            </div>
-            {identifyTailShape && TAIL_SHAPE_REFERENCES[identifyTailShape.charAt(0).toUpperCase() + identifyTailShape.slice(1)] ? (
-              <div className="body-shape-reference">
-                <img src={TAIL_SHAPE_REFERENCES[identifyTailShape.charAt(0).toUpperCase() + identifyTailShape.slice(1)].image} alt={`${identifyTailShape} tail shape reference`} className="body-shape-reference-image" />
-                <p className="body-shape-reference-text">{TAIL_SHAPE_REFERENCES[identifyTailShape.charAt(0).toUpperCase() + identifyTailShape.slice(1)].description}</p>
-              </div>
-            ) : null}
-          </div>
-          {identifyMatches.length === 0 ? (
-            <p className="empty-state">No species found. Try another name, body shape, or tail shape.</p>
-          ) : (
-            <>
-              {identifyFilterSummary ? <p className="identify-filter-summary">Showing species for {identifyFilterSummary}</p> : null}
-              <div className="identify-grid">
-                {identifyMatches.map((item) => (
-                  <button key={item._id || item.id} type="button" className={`identify-card ${selectedIdentifySpeciesId === toSpeciesKey(item) ? "identify-card-active" : ""}`}
-                    onClick={() => setSelectedIdentifySpeciesId(toSpeciesKey(item))}>
-                    {resolveSpeciesImageUrl(item) && !brokenIdentifyImages[toSpeciesKey(item)] ? (
-                      <img src={resolveSpeciesImageUrl(item)} alt={item.name ? `${item.name} reference` : "Species reference"} className="identify-species-image"
-                        onError={() => { const key = toSpeciesKey(item); setBrokenIdentifyImages((prev) => ({ ...prev, [key]: true })); }} />
-                    ) : (
-                      <div className="identify-species-image identify-species-image-fallback">No Image</div>
-                    )}
-                    <h3>{item.name}</h3>
-                    <p>{item.scientificName}</p>
-                    <div className="identify-meta-row">
-                      <span className="chip chip-blue">{formatBodyShapeLabel(item.bodyShape)}</span>
-                      <span className={`chip ${item.isFullyBanned ? "chip-red" : "chip-amber"}`}>{item.isFullyBanned ? "Banned" : item.protectionStatus || "Status unknown"}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {selectedIdentifySpecies ? (
-            <article className="identify-detail-card">
-              {resolveSpeciesImageUrl(selectedIdentifySpecies) && !brokenIdentifyImages[toSpeciesKey(selectedIdentifySpecies)] ? (
-                <img src={resolveSpeciesImageUrl(selectedIdentifySpecies)} alt={selectedIdentifySpecies.name ? `${selectedIdentifySpecies.name} full reference` : "Selected species"} className="identify-detail-image"
-                  onError={() => { const key = toSpeciesKey(selectedIdentifySpecies); setBrokenIdentifyImages((prev) => ({ ...prev, [key]: true })); }} />
-              ) : null}
-              <div className="section-head">
-                <h3>{selectedIdentifySpecies.name}</h3>
-                <span className={`chip ${selectedIdentifySpecies.isFullyBanned ? "chip-red" : "chip-amber"}`}>{selectedIdentifySpecies.isFullyBanned ? "Fully Banned" : selectedIdentifySpecies.protectionStatus || "Status unknown"}</span>
-              </div>
-              <p className="identify-scientific-name">{selectedIdentifySpecies.scientificName}</p>
-              <div className="identify-detail-grid">
-                <p><strong>Body Shape:</strong> {formatBodyShapeLabel(selectedIdentifySpecies.bodyShape)}</p>
-                <p><strong>Tail Shape:</strong> {selectedIdentifySpecies.tailShape ? toTitleCase(selectedIdentifySpecies.tailShape) : "Unknown"}</p>
-                <p><strong>Fin Type:</strong> {selectedIdentifySpecies.finType || "Not specified"}</p>
-                <p><strong>Color Pattern:</strong> {selectedIdentifySpecies.colorPattern || "Not specified"}</p>
-                <p><strong>Legal Min Size:</strong> {selectedIdentifySpecies.legalMinSizeCm ? `${selectedIdentifySpecies.legalMinSizeCm} cm` : "Not specified"}</p>
-                <p><strong>Legal Season:</strong> {formatMonthRange(selectedIdentifySpecies.legalSeason)}</p>
-                <p className="identify-detail-full"><strong>Regions:</strong> {Array.isArray(selectedIdentifySpecies.regions) && selectedIdentifySpecies.regions.length > 0 ? selectedIdentifySpecies.regions.join(", ") : "Not specified"}</p>
-                <p className="identify-detail-full"><strong>Description:</strong> {selectedIdentifySpecies.description?.trim() || "No description available."}</p>
-              </div>
-            </article>
-          ) : null}
-        </section>
-      ) : null}
-
-      {activeView === "dashboard" && isComplaintOpen ? (
-        <section className="report-form-panel card-reveal" role="region" aria-label="Create illegal fish report">
-          <div className="complaint-modal complaint-modal-inline">
-            <div className="modal-header">
-              <h2>Create Illegal Fish Report</h2>
-              <button className="modal-close" type="button" onClick={closeComplaintModal}>Cancel</button>
-            </div>
-            <form className="complaint-form" onSubmit={submitComplaint}>
-              <label>Incident Type
-                <select value={complaintForm.incidentType} onChange={(e) => updateComplaintField("incidentType", e.target.value)}>
-                  {INCIDENT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
-                </select>
-              </label>
-              <label>Description
-                <textarea rows={4} minLength={20} placeholder="Describe what happened, vessel type, time, and severity..." value={complaintForm.description} onChange={(e) => updateComplaintField("description", e.target.value)} required />
-              </label>
-              <div className="form-row">
-                <label>Latitude <input type="number" step="any" placeholder="6.9271" value={complaintForm.latitude} onChange={(e) => updateComplaintField("latitude", e.target.value)} required /></label>
-                <label>Longitude <input type="number" step="any" placeholder="79.8612" value={complaintForm.longitude} onChange={(e) => updateComplaintField("longitude", e.target.value)} required /></label>
-              </div>
-              <div className="form-row form-row-bottom">
-                <label>Incident Date <input type="datetime-local" value={complaintForm.incidentDate} onChange={(e) => updateComplaintField("incidentDate", e.target.value)} /></label>
-                <label>Species (optional)
-                  <select value={complaintForm.speciesId} onChange={(e) => updateComplaintField("speciesId", e.target.value)}>
-                    <option value="">Not sure</option>
-                    {speciesCatalog.map((item) => <option key={item._id || item.id} value={item._id || item.id}>{item.name}</option>)}
-                  </select>
-                </label>
-              </div>
-              <section className="species-helper">
-                <h3>Not sure which species?</h3>
-                <p>Use body shape and tail shape to find likely species, then select one.</p>
-                <div className="helper-filter-block">
-                  <span>Body shape</span>
-                  <div className="pills">
-                    {BODY_SHAPES.map((shape) => (
-                      <button key={`complaint-${shape}`} type="button" onClick={() => updateComplaintGuess("bodyShape", shape)} className={`pill ${complaintGuess.bodyShape === shape ? "pill-active" : ""}`}>{toTitleCase(shape)}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="helper-filter-block">
-                  <span>Tail shape</span>
-                  <div className="pills">
-                    {TAIL_SHAPES.map((shape) => (
-                      <button key={`complaint-tail-${shape}`} type="button" onClick={() => updateComplaintGuess("tailShape", shape)} className={`pill ${complaintGuess.tailShape === shape ? "pill-active" : ""}`}>{toTitleCase(shape)}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="helper-results">
-                  {guessedSpeciesMatches.length === 0 ? (
-                    <p className="file-hint">No species matches for this shape combination.</p>
-                  ) : (
-                    guessedSpeciesMatches.map((item) => {
-                      const selected = complaintForm.speciesId === (item._id || item.id);
-                      return (
-                        <button key={item._id || item.id} type="button" className={`guess-item ${selected ? "guess-item-selected" : ""}`} onClick={() => updateComplaintField("speciesId", item._id || item.id)}>
-                          <strong>{item.name}</strong>
-                          <span>{item.scientificName}</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-              <label>Evidence (optional, up to 5 files)
-                <input type="file" multiple accept="image/*,video/*" onChange={(e) => updateComplaintEvidence(e.target.files)} />
-              </label>
-              {complaintEvidence.length > 0 ? <p className="file-hint">Selected: {complaintEvidence.map((file) => file.name).join(", ")}</p> : <p className="file-hint">No evidence selected.</p>}
-              {complaintStatus.error ? <p className="form-error">{complaintStatus.error}</p> : null}
-              <div className="form-actions">
-                <button type="button" className="ghost-btn" onClick={setCurrentLocation}>Use My Location</button>
-                <button type="submit" className="solid-btn" disabled={complaintStatus.loading}>{complaintStatus.loading ? "Submitting..." : "Submit Report"}</button>
-              </div>
-            </form>
-          </div>
-        </section>
-      ) : null}
+      {activeView === "dashboard" && isComplaintOpen && (
+        <ReportModal
+          speciesCatalog={speciesCatalog}
+          complaintForm={complaintForm}         updateComplaintField={updateComplaintField}
+          complaintGuess={complaintGuess}       updateComplaintGuess={updateComplaintGuess}
+          complaintEvidence={complaintEvidence} updateComplaintEvidence={updateComplaintEvidence}
+          complaintStatus={complaintStatus}
+          submitComplaint={submitComplaint}
+          closeComplaintModal={() => { if (complaintStatus.loading) return; setIsComplaintOpen(false); }}
+          setCurrentLocation={setCurrentLocation}
+          guessedSpeciesMatches={guessedSpeciesMatches}
+        />
+      )}
     </main>
   );
 }
