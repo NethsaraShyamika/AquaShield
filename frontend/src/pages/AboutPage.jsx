@@ -263,30 +263,30 @@ const AboutImageCarousel = () => {
 // Team member data
 const team = [
   {
-    name: "Dr. Marina Silva",
+    name: "Dr. Nadeesha Perera",
     role: "Marine Biologist & Co-Founder",
-    bio: "15 years researching coral ecosystems. Passionate about using technology to fight illegal fishing.",
+    bio: "15 years researching coral reef ecosystems along Sri Lanka’s coastline. Passionate about using technology to combat illegal fishing and protect marine biodiversity.",
     img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80",
     color: "from-cyan-500/20 to-blue-600/20",
   },
   {
-    name: "James Tharaka",
+    name: "Tharindu Jayasinghe",
     role: "Lead Developer",
-    bio: "Full-stack engineer building scalable systems that connect ocean guardians worldwide.",
+    bio: "Full-stack software engineer focused on building scalable systems that connect ocean conservation efforts across Sri Lanka.",
     img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
     color: "from-blue-500/20 to-teal-600/20",
   },
   {
-    name: "Aisha Ndlovu",
+    name: "Sanduni Fernando",
     role: "Conservation Officer",
-    bio: "Former coastguard officer with expertise in maritime law and illegal fishing enforcement.",
+    bio: "Former Sri Lanka Coast Guard officer with strong expertise in maritime law, illegal fishing detection, and coastal protection.",
     img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80",
     color: "from-teal-500/20 to-cyan-600/20",
   },
   {
-    name: "Kenji Watanabe",
+    name: "Kasun Wijesinghe",
     role: "Data Scientist",
-    bio: "Analyzing fishing patterns with AI to predict and prevent illegal activity before it happens.",
+    bio: "Specializes in analyzing fishing patterns using AI and data analytics to predict and prevent illegal fishing activities in Sri Lankan waters.",
     img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80",
     color: "from-indigo-500/20 to-blue-600/20",
   },
