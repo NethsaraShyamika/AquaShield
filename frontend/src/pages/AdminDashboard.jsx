@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // AdminDashboard.jsx
 // Main admin dashboard page for AquaShield
-// Shows stats, charts, recent cases and users
+// Shows stats, charts, recent cases, reports and users
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from "react";
@@ -12,10 +12,10 @@ import {
 } from "recharts";
 import {
   Users, Briefcase, AlertTriangle, CheckCircle,
-  Clock, TrendingUp, Shield, Fish, ChevronRight,
+  Clock, TrendingUp, Shield, Fish,
   LayoutDashboard, FileText, Settings, LogOut,
-  UserX, Activity, MapPin, Menu, X, Search,
-  Waves, Zap,
+  UserX, Activity, MapPin, Search, X,
+  ChevronRight,
 } from "lucide-react";
 
 // ─── API CONFIG ───────────────────────────────────────────────
@@ -23,128 +23,60 @@ const API_BASE = "http://localhost:5000/api";
 const getToken = () => localStorage.getItem("token");
 const authHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 const api = {
-  getUsers: () => fetch(`${API_BASE}/users`, { headers: authHeader() }).then((r) => r.json()),
-  getCases: () => fetch(`${API_BASE}/cases`, { headers: authHeader() }).then((r) => r.json()),
+  getUsers:   () => fetch(`${API_BASE}/users`,   { headers: authHeader() }).then((r) => r.json()),
+  getCases:   () => fetch(`${API_BASE}/cases`,   { headers: authHeader() }).then((r) => r.json()),
+  getReports: () => fetch(`${API_BASE}/reports`, { headers: authHeader() }).then((r) => r.json()),
 };
 
-// ─── CASE STATUS STYLES ───────────────────────────────────────
-const STATUS_META = {
-  OPEN:                  { label: "Open",             color: "#22d3ee", bg: "bg-cyan-500/10",    text: "text-cyan-400"   },
-  UNDER_INVESTIGATION:   { label: "Investigating",    color: "#f59e0b", bg: "bg-amber-500/10",   text: "text-amber-400"  },
-  LEGAL_ACTION_STARTED:  { label: "Legal Action",     color: "#a78bfa", bg: "bg-violet-500/10",  text: "text-violet-400" },
-  COURT_PROCEEDING:      { label: "Court Proceeding", color: "#f472b6", bg: "bg-pink-500/10",    text: "text-pink-400"   },
-  CLOSED:                { label: "Closed",           color: "#34d399", bg: "bg-emerald-500/10", text: "text-emerald-400"},
-  REJECTED:              { label: "Rejected",         color: "#f87171", bg: "bg-red-500/10",     text: "text-red-400"    },
-};
-
-// ─── CASE PRIORITY STYLES ─────────────────────────────────────
-const PRIORITY_META = {
-  HIGH:   { color: "#f87171", bar: "bg-red-400"    },
-  MEDIUM: { color: "#fbbf24", bar: "bg-amber-400"  },
-  LOW:    { color: "#34d399", bar: "bg-emerald-400"},
-};
-
-// ─── SIDEBAR NAVIGATION ITEMS ─────────────────────────────────
+// ─── NAV ITEMS ────────────────────────────────────────────────
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard",          icon: LayoutDashboard, path: "/admin/dashboard" },
   { id: "users",     label: "User Management",    icon: Users,           path: "/admin/users"     },
   { id: "species",   label: "Species Management", icon: Fish,            path: "/admin/species"   },
   { id: "reports",   label: "Report Management",  icon: FileText,        path: "/admin/reports"   },
-  { id: "cases",     label: "Case Management",    icon: Briefcase,       path: "/admin/cases"     },  
+  { id: "cases",     label: "Case Management",    icon: Briefcase,       path: "/admin/cases"     },
   { id: "settings",  label: "Settings",           icon: Settings,        path: "/admin/settings"  },
 ];
 
-// ─── HELPER ───────────────────────────────────────────────────
+// ─── CASE STATUS META ─────────────────────────────────────────
+const CASE_STATUS_META = {
+  OPEN:                 { label: "Open",             twClass: "bg-cyan-500/20 text-cyan-400"    },
+  UNDER_INVESTIGATION:  { label: "Investigating",    twClass: "bg-amber-500/20 text-amber-400"  },
+  LEGAL_ACTION_STARTED: { label: "Legal Action",     twClass: "bg-violet-500/20 text-violet-400"},
+  COURT_PROCEEDING:     { label: "Court Proceeding", twClass: "bg-pink-500/20 text-pink-400"    },
+  CLOSED:               { label: "Closed",           twClass: "bg-emerald-500/20 text-emerald-400"},
+  REJECTED:             { label: "Rejected",         twClass: "bg-red-500/20 text-red-400"      },
+};
+
+// ─── REPORT STATUS META ───────────────────────────────────────
+const REPORT_STATUS_META = {
+  Pending:        { bg: "rgba(234,179,8,0.12)",  border: "rgba(234,179,8,0.35)",  text: "#fbbf24" },
+  "Under Review": { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.35)", text: "#60a5fa" },
+  Verified:       { bg: "rgba(20,184,166,0.12)", border: "rgba(20,184,166,0.35)", text: "#2dd4bf" },
+  Dismissed:      { bg: "rgba(244,63,94,0.12)",  border: "rgba(244,63,94,0.35)",  text: "#fb7185" },
+  Resolved:       { bg: "rgba(34,197,94,0.12)",  border: "rgba(34,197,94,0.35)",  text: "#4ade80" },
+};
+
+// ─── PRIORITY META ────────────────────────────────────────────
+const PRIORITY_META = {
+  HIGH:   { color: "#f87171", twClass: "bg-red-400"     },
+  MEDIUM: { color: "#fbbf24", twClass: "bg-amber-400"   },
+  LOW:    { color: "#34d399", twClass: "bg-emerald-400" },
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-// ─────────────────────────────────────────────────────────────
-// STAT CARD
-// ─────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, sub, accent, loading, index }) {
-  return (
-    <div
-      className="stat-card admin-glass relative overflow-hidden rounded-2xl p-6 flex flex-col gap-3 group cursor-default"
-      style={{
-        background: "var(--card-bg)",
-        border: `1px solid var(--card-border)`,
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        animationDelay: `${index * 80}ms`,
-      }}
-    >
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
-        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
-
-      {/* Floating glow blob */}
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 blur-3xl pointer-events-none"
-        style={{ background: accent }} />
-
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: `${accent}99` }}>{label}</span>
-          {loading ? (
-            <div className="h-10 w-20 rounded-lg animate-pulse" style={{ background: `${accent}15` }} />
-          ) : (
-            <span className="text-5xl font-black tracking-tighter leading-none" style={{ color: accent }}>
-              {value}
-            </span>
-          )}
-        </div>
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: `${accent}12`, border: `1px solid ${accent}25`, boxShadow: `0 0 20px ${accent}20` }}>
-          <Icon size={20} style={{ color: accent }} />
-        </div>
-      </div>
-
-      {sub && (
-        <div className="relative z-10 flex items-center gap-1.5">
-          <div className="w-1 h-1 rounded-full" style={{ background: accent }} />
-          <span className="text-xs font-medium" style={{ color: `${accent}80` }}>{sub}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// STATUS BADGE
-// ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const meta = STATUS_META[status] || { label: status, bg: "bg-slate-700", text: "text-slate-300" };
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${meta.bg} ${meta.text}`}>
-      {meta.label}
-    </span>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// PRIORITY DOT
-// ─────────────────────────────────────────────────────────────
-function PriorityDot({ priority }) {
-  const meta = PRIORITY_META[priority] || { bar: "bg-slate-400", color: "#94a3b8" };
-  return (
-    <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: meta.color }}>
-      <span className={`w-2 h-2 rounded-full ${meta.bar}`}
-        style={{ boxShadow: `0 0 6px ${meta.color}80` }} />
-      {priority}
-    </span>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// CUSTOM CHART TOOLTIP
-// ─────────────────────────────────────────────────────────────
+// ─── CUSTOM TOOLTIP ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#0f1f35", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 12, padding: "10px 14px", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
-      <p style={{ color: "#64748b", fontSize: 11, marginBottom: 4 }}>{label}</p>
+    <div className="bg-[#0f1f35] border border-cyan-500/20 rounded-xl px-3.5 py-2.5 shadow-2xl">
+      <p className="text-white/40 text-[11px] mb-1">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color || p.fill, fontWeight: 800, fontSize: 13 }}>
-          {p.value} cases
+        <p key={i} className="text-[13px] font-extrabold" style={{ color: p.color || p.fill }}>
+          {p.value} {p.name === "count" ? "cases" : p.name}
         </p>
       ))}
     </div>
@@ -152,44 +84,49 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// MAIN ADMIN DASHBOARD
+// MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
-  // ── State ──────────────────────────────────────────────────
-  const [users, setUsers]             = useState([]);
-  const [cases, setCases]             = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState(null);
-  const [activeNav, setActiveNav]     = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [caseSearch, setCaseSearch]   = useState("");
+  const [users,   setUsers]   = useState([]);
+  const [cases,   setCases]   = useState([]);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [activeNav, setActiveNav] = useState("dashboard");
+  const [caseSearch, setCaseSearch] = useState("");
 
-  // ── Fetch data on page load ────────────────────────────────
   useEffect(() => {
+    const token = getToken();
+    if (!token) { navigate("/login", { replace: true }); return; }
     (async () => {
       try {
-        const [u, c] = await Promise.all([api.getUsers(), api.getCases()]);
+        const [u, c, r] = await Promise.all([api.getUsers(), api.getCases(), api.getReports()]);
         setUsers(Array.isArray(u) ? u : []);
         setCases(Array.isArray(c) ? c : []);
-      } catch (e) {
+        setReports(Array.isArray(r) ? r : (r?.reports ?? []));
+      } catch {
         setError("Failed to load dashboard data. Check your connection.");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate]);
 
-  // ── Computed stats ─────────────────────────────────────────
-  const totalUsers   = users.length;
-  const totalCases   = cases.length;
-  const openCases    = cases.filter((c) => c.status === "OPEN").length;
-  const highPriority = cases.filter((c) => c.priority === "HIGH").length;
-  const blockedUsers = users.filter((u) => u.isBlocked).length;
-  const closedCases  = cases.filter((c) => c.status === "CLOSED").length;
+  // ── Computed stats ────────────────────────────────────────
+  const totalUsers    = users.length;
+  const totalCases    = cases.length;
+  const openCases     = cases.filter((c) => c.status === "OPEN").length;
+  const highPriority  = cases.filter((c) => c.priority === "HIGH").length;
+  const blockedUsers  = users.filter((u) => u.isBlocked).length;
+  const closedCases   = cases.filter((c) => c.status === "CLOSED").length;
+  const totalReports  = reports.length;
+  const pendingReports   = reports.filter((r) => r.status === "Pending").length;
+  const verifiedReports  = reports.filter((r) => r.status === "Verified").length;
+  const resolvedReports  = reports.filter((r) => r.status === "Resolved").length;
 
-  // ── Chart data ─────────────────────────────────────────────
+  // ── Chart data ────────────────────────────────────────────
   const priorityChartData = ["HIGH", "MEDIUM", "LOW"].map((p) => ({
     name: p, count: cases.filter((c) => c.priority === p).length, fill: PRIORITY_META[p].color,
   }));
@@ -209,7 +146,7 @@ export default function AdminDashboard() {
     return months;
   })();
 
-  // ── Recent cases filtered by search ───────────────────────
+  // ── Recent data ───────────────────────────────────────────
   const recentCases = [...cases]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .filter((c) => {
@@ -223,273 +160,181 @@ export default function AdminDashboard() {
     })
     .slice(0, 6);
 
+  const recentReports = [...reports]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+
   const recentUsers = [...users]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 4);
 
-  // ── Sidebar navigation handler ─────────────────────────────
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.clear();
+    navigate("/login", { replace: true });
+  };
+
   const handleNav = (id, path) => {
     setActiveNav(id);
-    setSidebarOpen(false);
     navigate(path);
   };
 
+  // ─────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    <div className="min-h-screen bg-gradient-to-br from-[#1E3A5F] to-[#0C1423] overflow-hidden relative">
+      {/* Background blobs */}
+      <div className="absolute w-[380px] h-[380px] rounded-full blur-[70px] bg-blue-500/20 -top-[120px] -left-[100px] pointer-events-none" />
+      <div className="absolute w-[460px] h-[460px] rounded-full blur-[70px] bg-[#1E3A5F]/30 -right-[140px] -bottom-[170px] pointer-events-none" />
 
-        :root {
-          --ocean-start: #1E3A5F;
-          --ocean-end: #0C1423;
-          --card-bg: rgba(255, 255, 255, 0.08);
-          --card-border: rgba(255, 255, 255, 0.18);
-        }
+      <div className="relative z-10 flex min-h-screen">
 
-        *, *::before, *::after { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; }
-        body { background: #040d1a; }
+        {/* ── SIDEBAR ─────────────────────────────────────── */}
+        <aside className="w-[260px] flex-shrink-0 border-r border-white/10 bg-[rgba(6,15,30,0.88)] backdrop-blur-[18px] fixed top-0 left-0 h-full z-20 overflow-y-auto">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 px-3 py-5 pb-4 mb-1 border-b border-white/10">
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30">
+              <Fish size={18} className="text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-sm font-extrabold text-white m-0">AquaShield</p>
+              <p className="text-[10px] tracking-[0.1em] uppercase text-white/45 m-0">Admin Panel</p>
+            </div>
+          </div>
 
-        .admin-dashboard {
-          position: relative;
-          min-height: 100vh;
-          background: linear-gradient(135deg, var(--ocean-start) 0%, var(--ocean-end) 100%);
-          overflow: hidden;
-        }
+          {/* Nav items */}
+          <div className="flex flex-col gap-2.5 p-3">
+            {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleNav(id, path)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-sm font-semibold transition-all duration-180 ${
+                  activeNav === id
+                    ? "bg-cyan-500/15 text-cyan-400 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.28)]"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <Icon size={15} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
 
-        .admin-dashboard::before,
-        .admin-dashboard::after {
-          content: "";
-          position: absolute;
-          border-radius: 999px;
-          filter: blur(70px);
-          pointer-events: none;
-          z-index: 0;
-        }
+          {/* Logout */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all duration-180"
+            >
+              <LogOut size={15} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
 
-        .admin-dashboard::before {
-          width: 360px;
-          height: 360px;
-          top: -120px;
-          left: -80px;
-          background: rgba(59, 130, 246, 0.18);
-        }
+        {/* ── MAIN CONTENT ─────────────────────────────────── */}
+        <div className="flex-1 ml-[260px] w-[calc(100%-260px)] p-6 overflow-y-auto">
+          <div className="max-w-[1180px] mx-auto flex flex-col gap-6">
 
-        .admin-dashboard::after {
-          width: 420px;
-          height: 420px;
-          right: -120px;
-          bottom: -160px;
-          background: rgba(30, 58, 95, 0.26);
-        }
-
-        .admin-glass {
-          background: var(--card-bg) !important;
-          border: 1px solid var(--card-border) !important;
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
-        }
-
-        ::-webkit-scrollbar { width: 3px; height: 3px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.2); border-radius: 99px; }
-
-        /* Stat card entrance */
-        .stat-card { animation: cardIn .5s cubic-bezier(.16,1,.3,1) both; }
-        @keyframes cardIn { from { opacity:0; transform:translateY(20px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
-
-        /* Fade up */
-        .fade-up { animation: fadeUp .6s cubic-bezier(.16,1,.3,1) both; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        .d1 { animation-delay:.05s; } .d2 { animation-delay:.12s; }
-        .d3 { animation-delay:.18s; } .d4 { animation-delay:.24s; }
-        .d5 { animation-delay:.30s; } .d6 { animation-delay:.36s; }
-
-        /* Sidebar nav hover */
-        .nav-btn { position: relative; overflow: hidden; }
-        .nav-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(34,211,238,0.08),transparent); opacity:0; transition:.2s; border-radius:12px; }
-        .nav-btn:hover::before { opacity:1; }
-
-        /* Table row hover */
-        .trow { transition: background .15s; }
-        .trow:hover { background: rgba(34,211,238,0.04); }
-
-        /* Glow pulse on active nav */
-        .nav-active { box-shadow: inset 0 0 0 1px rgba(34,211,238,0.3), 0 0 20px rgba(34,211,238,0.08); }
-
-        /* Shimmer loading */
-        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
-      `}</style>
-
-      <div className="admin-dashboard" style={{ fontFamily: "'Outfit', sans-serif", width: "100vw", minHeight: "100vh", color: "#fff", display: "flex", overflowX: "hidden" }}>
-
-        {/* ── ANIMATED BACKGROUND ─────────────────────────────── */}
-        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-          {/* Deep ocean gradient */}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(6,182,212,0.12) 0%, transparent 60%)" }} />
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 50% 40% at 100% 100%, rgba(99,102,241,0.08) 0%, transparent 60%)" }} />
-          {/* Grid */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(34,211,238,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.025) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
-          {/* Vignette */}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, rgba(4,13,26,0.8) 100%)" }} />
-        </div>
-
-        {/* ── SIDEBAR ─────────────────────────────────────────── */}
-        <>
-          {/* Mobile overlay */}
-          {sidebarOpen && (
-            <div className="fixed inset-0 z-30 lg:hidden"
-              style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
-              onClick={() => setSidebarOpen(false)} />
-          )}
-
-          <aside style={{
-            width: 260, flexShrink: 0, background: "rgba(6,15,30,0.95)",
-            borderRight: "1px solid rgba(34,211,238,0.08)",
-            backdropFilter: "blur(20px)",
-            display: "flex", flexDirection: "column",
-            position: sidebarOpen ? "fixed" : "sticky",
-            top: 0, left: 0, height: "100vh", zIndex: 40,
-            transform: sidebarOpen ? "translateX(0)" : undefined,
-            transition: "transform .3s cubic-bezier(.16,1,.3,1)",
-          }}
-            className={!sidebarOpen ? "hidden lg:flex" : "flex"}>
-
-            {/* Brand */}
-            <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 14, background: "linear-gradient(135deg, rgba(6,182,212,0.2), rgba(99,102,241,0.2))", border: "1px solid rgba(34,211,238,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(34,211,238,0.15)" }}>
-                  <Waves size={20} style={{ color: "#22d3ee" }} />
-                </div>
+            {/* ── HEADER CARD ─────────────────────────────── */}
+            <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-6 py-5 shadow-xl">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p style={{ fontWeight: 800, fontSize: 16, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.3px" }}>AquaShield</p>
-                  <p style={{ fontSize: 10, color: "rgba(34,211,238,0.6)", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 600 }}>Admin Panel</p>
+                  <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] border border-white/10 bg-white/5 text-cyan-400 mb-3">
+                    <Shield size={12} /> Admin Panel
+                  </div>
+                  <h1 className="text-[28px] font-extrabold tracking-tight text-white">Dashboard</h1>
+                  <p className="text-sm text-white/40 mt-1">
+                    {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </p>
                 </div>
-              </div>
-
-              {/* System status pill */}
-              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 99, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", width: "fit-content" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399", animation: "pulse 2s infinite" }} />
-                <span style={{ fontSize: 10, color: "#34d399", fontWeight: 700, letterSpacing: "0.1em" }}>SYSTEM ONLINE</span>
-              </div>
-            </div>
-
-            {/* Nav */}
-            <nav style={{ flex: 1, padding: "16px 12px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
-              <p style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, padding: "0 12px", marginBottom: 8 }}>Navigation</p>
-
-              {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => {
-                const isActive = activeNav === id;
-                return (
-                  <button key={id} onClick={() => handleNav(id, path)}
-                    className="nav-btn"
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center", gap: 12,
-                      padding: "11px 14px", borderRadius: 12, border: "none", cursor: "pointer",
-                      background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
-                      color: isActive ? "#22d3ee" : "rgba(255,255,255,0.45)",
-                      fontFamily: "'Outfit', sans-serif", fontSize: 14, fontWeight: isActive ? 700 : 500,
-                      transition: "all .2s", textAlign: "left",
-                      ...(isActive ? { boxShadow: "inset 0 0 0 1px rgba(34,211,238,0.25)" } : {}),
-                    }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? "rgba(34,211,238,0.15)" : "rgba(255,255,255,0.04)", flexShrink: 0 }}>
-                      <Icon size={15} />
+                <div className="flex items-center gap-3">
+                  {openCases > 0 && (
+                    <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      {openCases} open cases
                     </div>
-                    <span style={{ flex: 1 }}>{label}</span>
-                    {isActive && <ChevronRight size={14} style={{ opacity: 0.7 }} />}
+                  )}
+                  <button className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                    <Activity size={15} />
                   </button>
-                );
-              })}
-            </nav>
-
-            {/* User info + logout */}
-            <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(99,102,241,0.2))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#22d3ee", flexShrink: 0 }}>
-                  AD
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Admin User</p>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Super Administrator</p>
-                </div>
-                <button onClick={() => { localStorage.removeItem("token"); navigate("/admin/login"); }}
-                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#f87171", flexShrink: 0, transition: "all .2s" }}>
-                  <LogOut size={13} />
-                </button>
-              </div>
-            </div>
-          </aside>
-        </>
-
-        {/* ── MAIN CONTENT ─────────────────────────────────────── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, position: "relative", zIndex: 1 }}>
-
-          {/* Top header */}
-          <header style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(4,13,26,0.85)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              {/* Mobile menu button */}
-              <button className="lg:hidden" onClick={() => setSidebarOpen(true)}
-                style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "rgba(255,255,255,0.5)" }}>
-                <Menu size={16} />
-              </button>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Zap size={14} style={{ color: "#22d3ee" }} />
-                  <h1 style={{ fontSize: 18, fontWeight: 900, color: "#fff", letterSpacing: "-0.5px", margin: 0 }}>Dashboard</h1>
-                </div>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0, marginTop: 1 }}>
-                  {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-                </p>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {/* Open cases indicator */}
-              {openCases > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 99, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fbbf24", boxShadow: "0 0 8px #fbbf24" }} />
-                  <span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700 }}>{openCases} open</span>
+            {/* Error banner */}
+            {error && (
+              <div className="px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+                <AlertTriangle size={15} /> {error}
+              </div>
+            )}
+
+            {/* ── USER & CASE STAT CARDS ───────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { icon: Users,         label: "Total Users",   value: totalUsers,   sub: `${blockedUsers} blocked`,            iconClass: "bg-cyan-500/20 border-cyan-500/30",    textClass: "text-cyan-400"    },
+                { icon: Briefcase,     label: "Total Cases",   value: totalCases,   sub: `${closedCases} resolved`,            iconClass: "bg-violet-500/20 border-violet-500/30", textClass: "text-violet-400"  },
+                { icon: Clock,         label: "Open Cases",    value: openCases,    sub: "Awaiting action",                    iconClass: "bg-amber-500/20 border-amber-500/30",   textClass: "text-amber-400"   },
+                { icon: AlertTriangle, label: "High Priority", value: highPriority, sub: "Needs immediate attention",          iconClass: "bg-red-500/20 border-red-500/30",       textClass: "text-red-400"     },
+              ].map(({ icon: Icon, label, value, sub, iconClass, textClass }) => (
+                <div key={label} className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-2xl p-5 shadow-xl">
+                  <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border mb-3 ${iconClass}`}>
+                    <Icon size={18} className={textClass} />
+                  </div>
+                  <p className="text-sm text-white/40">{label}</p>
+                  {loading
+                    ? <div className="h-9 w-16 rounded-lg animate-pulse bg-white/5 mt-1" />
+                    : <p className={`text-3xl font-extrabold ${textClass}`}>{value}</p>
+                  }
+                  <p className="text-xs text-white/25 mt-1">{sub}</p>
                 </div>
-              )}
-              <button style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "rgba(255,255,255,0.4)", position: "relative" }}>
-                <Activity size={15} />
-              </button>
-            </div>
-          </header>
-
-          {/* Error banner */}
-          {error && (
-            <div style={{ margin: "20px 28px 0", padding: "12px 16px", borderRadius: 12, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
-              <AlertTriangle size={15} /> {error}
-            </div>
-          )}
-
-          {/* ── DASHBOARD BODY ──────────────────────────────────── */}
-          <main style={{ flex: 1, padding: "28px", display: "flex", flexDirection: "column", gap: 24, overflowY: "auto" }}>
-
-            {/* ── STAT CARDS ────────────────────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-              <StatCard icon={Users}         label="Total Users"   value={totalUsers}   sub={`${blockedUsers} blocked`}         accent="#22d3ee" loading={loading} index={0} />
-              <StatCard icon={Briefcase}     label="Total Cases"   value={totalCases}   sub={`${closedCases} resolved`}         accent="#818cf8" loading={loading} index={1} />
-              <StatCard icon={Clock}         label="Open Cases"    value={openCases}    sub="Awaiting action"                   accent="#fbbf24" loading={loading} index={2} />
-              <StatCard icon={AlertTriangle} label="High Priority" value={highPriority} sub="Needs immediate attention"         accent="#f87171" loading={loading} index={3} />
+              ))}
             </div>
 
-            {/* ── CHARTS ROW ────────────────────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16 }} className="fade-up d2">
+            {/* ── REPORT STAT CARDS ────────────────────────── */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <FileText size={14} className="text-cyan-400" />
+                <h2 className="text-sm font-extrabold text-white/60 uppercase tracking-widest">Incident Reports</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { icon: FileText,     label: "Total Reports",    value: totalReports,   sub: "All submitted reports",    iconClass: "bg-blue-500/20 border-blue-500/30",     textClass: "text-blue-400"    },
+                  { icon: Clock,        label: "Pending Review",   value: pendingReports, sub: "Awaiting admin action",    iconClass: "bg-yellow-500/20 border-yellow-500/30", textClass: "text-yellow-400"  },
+                  { icon: Shield,       label: "Verified",         value: verifiedReports,sub: "Confirmed incidents",      iconClass: "bg-teal-500/20 border-teal-500/30",     textClass: "text-teal-400"    },
+                  { icon: CheckCircle,  label: "Resolved",         value: resolvedReports,sub: "Cases closed from reports",iconClass: "bg-green-500/20 border-green-500/30",   textClass: "text-green-400"   },
+                ].map(({ icon: Icon, label, value, sub, iconClass, textClass }) => (
+                  <div key={label} className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-2xl p-5 shadow-xl">
+                    <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border mb-3 ${iconClass}`}>
+                      <Icon size={18} className={textClass} />
+                    </div>
+                    <p className="text-sm text-white/40">{label}</p>
+                    {loading
+                      ? <div className="h-9 w-16 rounded-lg animate-pulse bg-white/5 mt-1" />
+                      : <p className={`text-3xl font-extrabold ${textClass}`}>{value}</p>
+                    }
+                    <p className="text-xs text-white/25 mt-1">{sub}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── CHARTS ROW ───────────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
 
               {/* Bar chart */}
-              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Cases Over Time</p>
-                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>Monthly case volume · Last 6 months</p>
+                    <p className="text-[15px] font-extrabold text-white m-0">Cases Over Time</p>
+                    <p className="text-[11px] text-white/30 mt-0.5">Monthly case volume · Last 6 months</p>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 99, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)" }}>
-                    <TrendingUp size={12} style={{ color: "#22d3ee" }} />
-                    <span style={{ fontSize: 11, color: "#22d3ee", fontWeight: 700 }}>Live</span>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/8 border border-cyan-500/15 text-cyan-400 text-[11px] font-bold">
+                    <TrendingUp size={12} /> Live
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
@@ -501,8 +346,8 @@ export default function AdminDashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: "Outfit", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: "Outfit" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(34,211,238,0.04)", radius: 8 }} />
                     <Bar dataKey="count" fill="url(#barGrad)" radius={[8, 8, 0, 0]} />
                   </BarChart>
@@ -510,14 +355,14 @@ export default function AdminDashboard() {
               </div>
 
               {/* Pie chart */}
-              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Priority Split</p>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>Case urgency breakdown</p>
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 shadow-xl">
+                <div className="mb-5">
+                  <p className="text-[15px] font-extrabold text-white m-0">Priority Split</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">Case urgency breakdown</p>
                 </div>
                 {loading ? (
-                  <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: 56, height: 56, borderRadius: "50%", border: "3px solid rgba(34,211,238,0.1)", borderTopColor: "#22d3ee", animation: "spin 1s linear infinite" }} />
+                  <div className="h-40 flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-full border-[3px] border-cyan-500/10 border-t-cyan-400 animate-spin" />
                   </div>
                 ) : (
                   <>
@@ -531,14 +376,14 @@ export default function AdminDashboard() {
                         <Tooltip content={<CustomTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                    <div className="flex flex-col gap-2 mt-1">
                       {priorityChartData.map((d) => (
-                        <div key={d.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.fill, boxShadow: `0 0 8px ${d.fill}` }} />
+                        <div key={d.name} className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-[12px] text-white/50 font-semibold">
+                            <span className="w-2 h-2 rounded-full" style={{ background: d.fill }} />
                             {d.name}
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: d.fill }}>{d.count}</span>
+                          <span className="text-[13px] font-extrabold" style={{ color: d.fill }}>{d.count}</span>
                         </div>
                       ))}
                     </div>
@@ -547,221 +392,293 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* ── STATUS BREAKDOWN ──────────────────────────────── */}
-            <div style={{ borderRadius: 20, padding: 24 }} className="admin-glass fade-up d3">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Case Status Overview</p>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>Distribution across all statuses</p>
-                </div>
+            {/* ── CASE STATUS OVERVIEW ─────────────────────── */}
+            <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 shadow-xl">
+              <div className="mb-5">
+                <p className="text-[15px] font-extrabold text-white m-0">Case Status Overview</p>
+                <p className="text-[11px] text-white/30 mt-0.5">Distribution across all statuses</p>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12 }}>
-                {Object.entries(STATUS_META).map(([key, meta]) => {
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {Object.entries(CASE_STATUS_META).map(([key, meta]) => {
                   const count = cases.filter((c) => c.status === key).length;
                   const pct = totalCases > 0 ? Math.round((count / totalCases) * 100) : 0;
                   return (
-                    <div key={key} style={{ borderRadius: 16, padding: "16px 14px", background: `${meta.color}08`, border: `1px solid ${meta.color}18`, transition: "all .2s", cursor: "default" }}
-                      onMouseEnter={e => e.currentTarget.style.border = `1px solid ${meta.color}40`}
-                      onMouseLeave={e => e.currentTarget.style.border = `1px solid ${meta.color}18`}>
-                      <p style={{ fontSize: 28, fontWeight: 900, color: meta.color, margin: 0, lineHeight: 1 }}>{loading ? "—" : count}</p>
-                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 700, margin: "6px 0 10px", textTransform: "uppercase", letterSpacing: "0.05em", lineHeight: 1.3 }}>{meta.label}</p>
-                      <div style={{ height: 3, borderRadius: 99, background: "rgba(255,255,255,0.06)" }}>
-                        <div style={{ height: "100%", borderRadius: 99, background: meta.color, width: `${pct}%`, transition: "width 1s cubic-bezier(.16,1,.3,1)", boxShadow: `0 0 8px ${meta.color}60` }} />
+                    <div key={key} className={`rounded-2xl p-4 ${meta.twClass.split(" ")[0]} border border-white/10`}>
+                      <p className={`text-2xl font-extrabold ${meta.twClass.split(" ")[1]} m-0`}>
+                        {loading ? "—" : count}
+                      </p>
+                      <p className="text-[10px] text-white/35 font-bold mt-1.5 mb-2.5 uppercase tracking-wider leading-tight">{meta.label}</p>
+                      <div className="h-1 rounded-full bg-white/10">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${meta.twClass.split(" ")[0].replace("/20", "/60")}`} style={{ width: `${pct}%` }} />
                       </div>
-                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", margin: "5px 0 0", fontWeight: 600 }}>{pct}%</p>
+                      <p className="text-[10px] text-white/20 mt-1 font-semibold">{pct}%</p>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* ── RECENT CASES TABLE ────────────────────────────── */}
-            <div style={{ borderRadius: 20, overflow: "hidden" }} className="admin-glass fade-up d4">
-
-              {/* Table header */}
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            {/* ── RECENT CASES TABLE ───────────────────────── */}
+            <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl overflow-hidden shadow-xl">
+              <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Recent Cases</p>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>
+                  <h2 className="text-xl font-extrabold text-white">Recent Cases</h2>
+                  <p className="text-sm text-white/40">
                     {caseSearch ? `${recentCases.length} result${recentCases.length !== 1 ? "s" : ""} found` : "Latest 6 cases"}
                   </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {/* Search */}
-                  <div style={{ position: "relative" }}>
-                    <Search size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.3)", pointerEvents: "none" }} />
-                    <input type="text" value={caseSearch} onChange={(e) => setCaseSearch(e.target.value)}
+                <div className="flex items-center gap-3">
+                  <div className="relative w-full md:w-[220px]">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                    <input
+                      value={caseSearch}
+                      onChange={(e) => setCaseSearch(e.target.value)}
                       placeholder="Search cases..."
-                      style={{ paddingLeft: 34, paddingRight: caseSearch ? 32 : 12, paddingTop: 8, paddingBottom: 8, borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: 12, fontFamily: "Outfit", outline: "none", width: 200, transition: "all .2s" }} />
+                      className="w-full rounded-2xl py-2.5 pl-9 pr-8 text-sm outline-none bg-white/5 border border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50"
+                    />
                     {caseSearch && (
-                      <button onClick={() => setCaseSearch("")}
-                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", display: "flex" }}>
+                      <button onClick={() => setCaseSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
                         <X size={12} />
                       </button>
                     )}
                   </div>
-                  <button onClick={() => handleNav("cases", "/admin/cases")}
-                    style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#22d3ee", fontWeight: 700, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontFamily: "Outfit", transition: "all .2s" }}>
+                  <button
+                    onClick={() => handleNav("cases", "/admin/cases")}
+                    className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all whitespace-nowrap"
+                  >
                     View all <ChevronRight size={13} />
                   </button>
                 </div>
               </div>
 
-              {/* Table content */}
               {loading ? (
-                <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="shimmer" style={{ height: 44, borderRadius: 10 }} />
-                  ))}
-                </div>
-              ) : recentCases.length === 0 ? (
-                <div style={{ padding: 60, textAlign: "center" }}>
-                  <Search size={32} style={{ color: "rgba(255,255,255,0.1)", margin: "0 auto 12px" }} />
-                  <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>
-                    {caseSearch ? `No cases match "${caseSearch}"` : "No cases found"}
-                  </p>
-                  {caseSearch && (
-                    <button onClick={() => setCaseSearch("")}
-                      style={{ marginTop: 8, fontSize: 12, color: "#22d3ee", background: "none", border: "none", cursor: "pointer", fontFamily: "Outfit" }}>
-                      Clear search
-                    </button>
-                  )}
+                <div className="p-6 space-y-3">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-2xl bg-white/5" />)}
                 </div>
               ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[780px] border-collapse">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      <tr className="border-b border-white/10">
                         {["Case No.", "Officer", "Priority", "Location", "Status", "Created"].map((h) => (
-                          <th key={h} style={{ padding: "10px 20px", textAlign: "left", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>{h}</th>
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-white/40">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {recentCases.map((c) => (
-                        <tr key={c._id} className="trow" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                          <td style={{ padding: "14px 20px" }}>
-                            <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#22d3ee", fontSize: 12, fontWeight: 700, background: "rgba(34,211,238,0.08)", padding: "3px 8px", borderRadius: 6 }}>
-                              {c.caseNumber}
-                            </span>
+                      {recentCases.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-4 py-14 text-center text-white/40">
+                            {caseSearch ? `No cases match "${caseSearch}"` : "No cases found"}
                           </td>
-                          <td style={{ padding: "14px 20px", color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 500 }}>{c.assignedOfficer || "—"}</td>
-                          <td style={{ padding: "14px 20px" }}><PriorityDot priority={c.priority} /></td>
-                          <td style={{ padding: "14px 20px" }}>
-                            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-                              <MapPin size={10} />
-                              <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.locationName || "—"}</span>
-                            </span>
-                          </td>
-                          <td style={{ padding: "14px 20px" }}><StatusBadge status={c.status} /></td>
-                          <td style={{ padding: "14px 20px", fontSize: 12, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>{fmtDate(c.createdAt)}</td>
                         </tr>
-                      ))}
+                      ) : recentCases.map((c) => {
+                        const sm = CASE_STATUS_META[c.status] || { label: c.status, twClass: "bg-white/10 text-white/40" };
+                        const pm = PRIORITY_META[c.priority];
+                        return (
+                          <tr key={c._id} className="border-b border-white/5 hover:bg-white/5 transition-all duration-200">
+                            <td className="px-4 py-3">
+                              <span className="font-mono text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg">
+                                {c.caseNumber}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-white/60">{c.assignedOfficer || "—"}</td>
+                            <td className="px-4 py-3">
+                              {pm ? (
+                                <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: pm.color }}>
+                                  <span className="w-2 h-2 rounded-full" style={{ background: pm.color }} />
+                                  {c.priority}
+                                </span>
+                              ) : <span className="text-white/30 text-xs">—</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="flex items-center gap-1 text-xs text-white/40">
+                                <MapPin size={10} />
+                                <span className="max-w-[120px] truncate">{c.locationName || "—"}</span>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${sm.twClass}`}>
+                                {sm.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/30 font-semibold">{fmtDate(c.createdAt)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
             </div>
 
-            {/* ── USERS + QUICK OVERVIEW ────────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="fade-up d5">
+            {/* ── RECENT REPORTS TABLE ─────────────────────── */}
+            <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl overflow-hidden shadow-xl">
+              <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-white">Recent Reports</h2>
+                  <p className="text-sm text-white/40">Latest 5 incident reports submitted</p>
+                </div>
+                <button
+                  onClick={() => handleNav("reports", "/admin/reports")}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all whitespace-nowrap"
+                >
+                  View all <ChevronRight size={13} />
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="p-6 space-y-3">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-2xl bg-white/5" />)}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[700px] border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        {["Incident Type", "Reported By", "Description", "Status", "Date"].map((h) => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-white/40">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentReports.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-4 py-14 text-center text-white/40">No reports found</td>
+                        </tr>
+                      ) : recentReports.map((r) => {
+                        const sc = REPORT_STATUS_META[r.status] || REPORT_STATUS_META.Pending;
+                        return (
+                          <tr key={r._id} className="border-b border-white/5 hover:bg-white/5 transition-all duration-200">
+                            <td className="px-4 py-3">
+                              <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400">
+                                {r.incidentType}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-sm text-white/80 font-medium m-0">
+                                {r.reportedBy?.firstName} {r.reportedBy?.lastName}
+                              </p>
+                              <p className="text-xs text-white/35 m-0">{r.reportedBy?.email}</p>
+                            </td>
+                            <td className="px-4 py-3 max-w-[200px]">
+                              <p className="text-sm text-white/50 truncate m-0">{r.description}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                                style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}
+                              >
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/30 font-semibold">{fmtDate(r.createdAt)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* ── RECENT USERS + QUICK OVERVIEW ────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
               {/* Recent users */}
-              <div className="admin-glass" style={{ borderRadius: 20, padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Recent Users</p>
-                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>{totalUsers} total registered</p>
+                    <p className="text-[15px] font-extrabold text-white m-0">Recent Users</p>
+                    <p className="text-[11px] text-white/30 mt-0.5">{totalUsers} total registered</p>
                   </div>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Users size={15} style={{ color: "#22d3ee" }} />
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                    <Users size={15} className="text-cyan-400" />
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="flex flex-col gap-2">
                   {loading ? (
-                    [...Array(4)].map((_, i) => <div key={i} className="shimmer" style={{ height: 52, borderRadius: 12 }} />)
+                    [...Array(4)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-2xl bg-white/5" />)
                   ) : recentUsers.length === 0 ? (
-                    <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center", padding: "16px 0" }}>No users found</p>
-                  ) : (
-                    recentUsers.map((u) => (
-                      <div key={u._id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", transition: "all .2s" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
-                        onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}>
-                        {/* Avatar */}
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, rgba(34,211,238,0.15), rgba(99,102,241,0.15))", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#22d3ee", flexShrink: 0 }}>
-                          {u.firstName?.[0]}{u.lastName?.[0]}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.firstName} {u.lastName}</p>
-                          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.25)", margin: "2px 0 0" }}>{u.uid}</p>
-                        </div>
-                        {/* Role badge */}
-                        {u.isBlocked ? (
-                          <span style={{ fontSize: 10, color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", padding: "3px 8px", borderRadius: 99, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                            <UserX size={9} /> Blocked
-                          </span>
-                        ) : u.isAdmin ? (
-                          <span style={{ fontSize: 10, color: "#818cf8", background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", padding: "3px 8px", borderRadius: 99, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                            <Shield size={9} /> Admin
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 10, color: "#34d399", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.2)", padding: "3px 8px", borderRadius: 99, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                            <CheckCircle size={9} /> Active
-                          </span>
-                        )}
+                    <p className="text-white/20 text-xs text-center py-4">No users found</p>
+                  ) : recentUsers.map((u) => (
+                    <div key={u._id} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/5 transition-all">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/15 border border-white/10 flex items-center justify-center text-xs font-extrabold text-cyan-400 flex-shrink-0">
+                        {u.firstName?.[0]}{u.lastName?.[0]}
                       </div>
-                    ))
-                  )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-white m-0 truncate">{u.firstName} {u.lastName}</p>
+                        <p className="font-mono text-[10px] text-white/25 m-0">{u.uid}</p>
+                      </div>
+                      {u.isBlocked ? (
+                        <span className="text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+                          <UserX size={9} /> Blocked
+                        </span>
+                      ) : u.isAdmin ? (
+                        <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+                          <Shield size={9} /> Admin
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+                          <CheckCircle size={9} /> Active
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Quick overview */}
-              <div className="admin-glass" style={{ borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+              <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl p-6 shadow-xl flex flex-col gap-5">
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0 }}>Quick Overview</p>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "3px 0 0" }}>System performance metrics</p>
+                  <p className="text-[15px] font-extrabold text-white m-0">Quick Overview</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">System performance metrics</p>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="flex flex-col gap-4">
                   {[
-                    { label: "Case Resolution Rate", value: totalCases > 0 ? Math.round((closedCases  / totalCases) * 100) : 0, color: "#34d399" },
-                    { label: "High Priority Rate",   value: totalCases > 0 ? Math.round((highPriority / totalCases) * 100) : 0, color: "#f87171" },
-                    { label: "User Blocked Rate",    value: totalUsers > 0 ? Math.round((blockedUsers / totalUsers) * 100) : 0, color: "#fbbf24" },
-                    { label: "Open Case Rate",       value: totalCases > 0 ? Math.round((openCases   / totalCases) * 100) : 0, color: "#22d3ee" },
+                    { label: "Case Resolution Rate",  value: totalCases > 0   ? Math.round((closedCases    / totalCases)   * 100) : 0, color: "#34d399" },
+                    { label: "High Priority Rate",    value: totalCases > 0   ? Math.round((highPriority   / totalCases)   * 100) : 0, color: "#f87171" },
+                    { label: "Report Resolution Rate",value: totalReports > 0 ? Math.round((resolvedReports/ totalReports) * 100) : 0, color: "#22d3ee" },
+                    { label: "User Blocked Rate",     value: totalUsers > 0   ? Math.round((blockedUsers   / totalUsers)   * 100) : 0, color: "#fbbf24" },
                   ].map((item) => (
                     <div key={item.label}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>{item.label}</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: item.color }}>{loading ? "—" : `${item.value}%`}</span>
+                      <div className="flex justify-between mb-1.5">
+                        <span className="text-xs text-white/45 font-semibold">{item.label}</span>
+                        <span className="text-[13px] font-extrabold" style={{ color: item.color }}>
+                          {loading ? "—" : `${item.value}%`}
+                        </span>
                       </div>
-                      <div style={{ height: 4, borderRadius: 99, background: "rgba(255,255,255,0.06)" }}>
-                        <div style={{ height: "100%", borderRadius: 99, background: item.color, width: loading ? "0%" : `${item.value}%`, transition: "width 1.2s cubic-bezier(.16,1,.3,1)", boxShadow: `0 0 10px ${item.color}50` }} />
+                      <div className="h-1 rounded-full bg-white/5">
+                        <div
+                          className="h-full rounded-full transition-all duration-1000"
+                          style={{ width: loading ? "0%" : `${item.value}%`, background: item.color, boxShadow: `0 0 10px ${item.color}50` }}
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Action buttons */}
-                <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <button onClick={() => handleNav("cases", "/admin/cases")}
-                    style={{ padding: "11px 16px", borderRadius: 12, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)", color: "#22d3ee", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(34,211,238,0.15)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "rgba(34,211,238,0.08)"}>
+                <div className="mt-auto grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleNav("cases", "/admin/cases")}
+                    className="py-2.5 rounded-2xl text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all flex items-center justify-center gap-1.5"
+                  >
                     <Briefcase size={13} /> Manage Cases
                   </button>
-                  <button onClick={() => handleNav("users", "/admin/users")}
-                    style={{ padding: "11px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
-                    <Users size={13} /> Manage Users
+                  <button
+                    onClick={() => handleNav("reports", "/admin/reports")}
+                    className="py-2.5 rounded-2xl text-xs font-semibold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <FileText size={13} /> View Reports
                   </button>
                 </div>
               </div>
             </div>
 
-          </main>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
