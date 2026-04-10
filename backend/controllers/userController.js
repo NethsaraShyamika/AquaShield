@@ -27,12 +27,35 @@ export async function createUser(req, res) {
       // don't return error, user is already created
     }
 
-    res.json({ message: "User created successfully" });
+    // ✅ Generate token for automatic login after signup
+    const payload = {
+      id: newUser._id,
+      email: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      isAdmin: newUser.isAdmin,
+      isBlocked: newUser.isBlocked,
+      isEmailVerified: newUser.isEmailVerified,
+      image: newUser.image,
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "48h" });
+
+    // ✅ Save user to session
+    req.session.user = payload;
+    req.session.save((err) => {
+      if (err) console.log("Session save error:", err);
+    });
+
+    res.json({ message: "User created successfully", token: token, user: payload });
 
   } catch (error) {
-    console.log(error);
+    console.log("Error in createUser:", error);
     if (error.code === 11000) {
-      return res.status(400).json({ message: "Email already exists" });
+      if (error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+      return res.status(400).json({ message: "A duplicate record was found. Please try again." });
     }
     res.status(403).json({ message: "Error creating user" });
   }
