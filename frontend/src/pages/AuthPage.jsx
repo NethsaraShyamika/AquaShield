@@ -223,14 +223,14 @@ export default function AuthPage() {
       title: "Dive Back In",
       subtitle: "The ocean needs its guardians. Sign in to continue protecting our marine ecosystems and report illegal fishing activities.",
       cta: "New here?",
-      ctaAction: "Create an account →",
+      ctaAction: "Create an account",
     },
     signup: {
       greeting: "Join Us Today",
       title: "Become a Guardian",
       subtitle: "Every report makes a difference. Join thousands of ocean guardians fighting illegal fishing and protecting endangered marine species.",
       cta: "Already a member?",
-      ctaAction: "Sign in instead →",
+      ctaAction: "Sign in instead",
     },
   };
 

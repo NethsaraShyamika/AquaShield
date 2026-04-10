@@ -183,7 +183,7 @@ export default function SignupForm({ onSubmit, isLoading, error }) {
             <span>Creating account...</span>
           </>
         ) : (
-          <span>Create Account →</span>
+          <span>Create Account </span>
         )}
       </button>
 
