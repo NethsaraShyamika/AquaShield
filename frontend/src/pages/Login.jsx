@@ -171,7 +171,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     return (
       <div className="flex flex-col gap-5">
         <button type="button" onClick={resetFlow} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors w-fit">
-          ← Back to Sign In
+          Back to Sign In
         </button>
 
         <div>
@@ -368,7 +368,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
           onClick={resetFlow}
           className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-3 rounded-xl text-sm"
         >
-          Back to Sign In →
+          Back to Sign In
         </button>
       </div>
     );
@@ -433,7 +433,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
         disabled={isLoading}
         className="relative w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 mt-1 flex items-center justify-center gap-2"
       >
-        {isLoading ? <><LoadingSpinner /><span>Signing in...</span></> : <span>Sign In →</span>}
+        {isLoading ? <><LoadingSpinner /><span>Signing in...</span></> : <span>Sign In </span>}
       </button>
 
       <div className="flex items-center gap-3 my-1">
