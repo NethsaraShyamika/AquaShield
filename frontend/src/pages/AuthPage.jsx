@@ -148,31 +148,22 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // ✅ Store token if backend returns one
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
+      // ✅ Always show generic message for any login failure
+      if (!res.ok) throw new Error("Invalid credentials");  // ← change this line
 
-      // ✅ Store user info
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      if (data.token) localStorage.setItem('token', data.token);
+      if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
 
       showToast("Welcome back! Login successful 🌊", "success");
-
-      // ✅ Redirect to dashboard
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      setTimeout(() => navigate('/dashboard'), 1000);
 
     } catch (err) {
       setError(err.message);
@@ -209,7 +200,7 @@ export default function AuthPage() {
       }
 
       showToast("Account created! Redirecting to dashboard 🌊", "success");
-      
+
       // ✅ Redirect to dashboard
       setTimeout(() => {
         navigate('/dashboard');
