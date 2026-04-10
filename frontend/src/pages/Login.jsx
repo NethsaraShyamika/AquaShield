@@ -1,28 +1,34 @@
 import { useState } from "react";
 import { InputField, LoadingSpinner } from "./AuthPage";
 
-/**
- * LoginForm Component
- * Props:
- * - onSubmit: function(formData) - handles login submission
- * - isLoading: boolean - shows loading state
- * - error: string - error message from parent
- * - onForgotPassword: function - handles forgot password click
- */
-export default function LoginForm({ onSubmit, isLoading, error, onForgotPassword }) {
+export default function LoginForm({ onSubmit, isLoading, error }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Validation
+  // ── Forgot password flow ──
+  // step: "login" | "forgot" | "otp" | "reset" | "success"
+  const [step, setStep] = useState("login");
+  const [fpEmail, setFpEmail] = useState("");
+  const [fpEmailError, setFpEmailError] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpError, setOtpError] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [resetErrors, setResetErrors] = useState({});
+  const [fpLoading, setFpLoading] = useState(false);
+
+  // ── Login ──
   const validate = () => {
-    const newErrors = {};
-    if (!formData.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format";
-    if (!formData.password) newErrors.password = "Password is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!formData.email) e.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = "Invalid email format";
+    if (!formData.password) e.password = "Password is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = (e) => {
@@ -35,10 +41,344 @@ export default function LoginForm({ onSubmit, isLoading, error, onForgotPassword
     if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
+  // ── Step 1: Send OTP to email ──
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    if (!fpEmail || !/\S+@\S+\.\S+/.test(fpEmail)) {
+      setFpEmailError("Please enter a valid email address");
+      return;
+    }
+    setFpEmailError("");
+    setFpLoading(true);
+    try {
+      const res = await fetch("/api/users/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fpEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+      setStep("otp");
+    } catch (err) {
+      setFpEmailError(err.message);
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  // ── OTP input helpers ──
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const next = [...otp];
+    next[index] = value.slice(-1);
+    setOtp(next);
+    setOtpError("");
+    if (value && index < 5) {
+      document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const next = [...otp];
+    pasted.split("").forEach((char, i) => { next[i] = char; });
+    setOtp(next);
+  };
+
+  // ── Step 2: Verify OTP (just move to reset step) ──
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    if (otp.join("").length < 6) {
+      setOtpError("Please enter the complete 6-digit OTP");
+      return;
+    }
+    setOtpError("");
+    setStep("reset");
+  };
+
+  // ── Step 3: Reset password ──
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!newPassword) errs.newPassword = "Password is required";
+    else if (newPassword.length < 6) errs.newPassword = "At least 6 characters";
+    if (!confirmPassword) errs.confirmPassword = "Please confirm password";
+    else if (newPassword !== confirmPassword) errs.confirmPassword = "Passwords do not match";
+    setResetErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setFpLoading(true);
+    try {
+      const res = await fetch("/api/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fpEmail, otp: otp.join(""), newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Reset failed");
+      setStep("success");
+    } catch (err) {
+      setResetErrors({ general: err.message });
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  const resetFlow = () => {
+    setStep("login");
+    setFpEmail("");
+    setFpEmailError("");
+    setOtp(["", "", "", "", "", ""]);
+    setOtpError("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetErrors({});
+  };
+
+  // ── PASSWORD STRENGTH ──
+  const getStrength = (pw) => {
+    if (!pw) return { score: 0, label: "", color: "" };
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const levels = [
+      { score: 0, label: "", color: "" },
+      { score: 1, label: "Weak", color: "bg-rose-500" },
+      { score: 2, label: "Fair", color: "bg-orange-400" },
+      { score: 3, label: "Good", color: "bg-yellow-400" },
+      { score: 4, label: "Strong", color: "bg-emerald-400" },
+      { score: 5, label: "Very Strong", color: "bg-cyan-400" },
+    ];
+    return levels[Math.min(score, 5)];
+  };
+
+  const strength = getStrength(newPassword);
+
+  // ────────────────────────────────────────
+  // ── FORGOT — Step: enter email ──
+  // ────────────────────────────────────────
+  if (step === "forgot") {
+    return (
+      <div className="flex flex-col gap-5">
+        <button type="button" onClick={resetFlow} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors w-fit">
+          ← Back to Sign In
+        </button>
+
+        <div>
+          <h3 className="text-white font-bold text-base mb-1">Forgot Password?</h3>
+          <p className="text-white/30 text-xs leading-relaxed">
+            Enter your email address and we'll send a 6-digit OTP to reset your password.
+          </p>
+        </div>
+
+        <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
+          <InputField
+            label="Email Address"
+            type="email"
+            placeholder="you@example.com"
+            value={fpEmail}
+            onChange={(e) => { setFpEmail(e.target.value); setFpEmailError(""); }}
+            error={fpEmailError}
+          />
+
+          <button
+            type="submit"
+            disabled={fpLoading}
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+          >
+            {fpLoading ? <><LoadingSpinner /><span>Sending OTP...</span></> : <span>Send OTP →</span>}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  // ── OTP — Step: verify OTP ──
+  // ────────────────────────────────────────
+  if (step === "otp") {
+    return (
+      <div className="flex flex-col gap-5">
+        <button type="button" onClick={() => setStep("forgot")} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors w-fit">
+          ← Back
+        </button>
+
+        <div>
+          <h3 className="text-white font-bold text-base mb-1">Check Your Email</h3>
+          <p className="text-white/30 text-xs leading-relaxed">
+            We sent a 6-digit OTP to <span className="text-cyan-400/80">{fpEmail}</span>. Enter it below.
+          </p>
+        </div>
+
+        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-5">
+          {/* OTP boxes */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-widest text-cyan-300/80">Enter OTP</label>
+            <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className={`w-11 h-12 text-center text-white text-lg font-bold rounded-xl border ${
+                    digit ? "border-cyan-400/60 bg-cyan-500/10" : "border-white/10 bg-white/5"
+                  } focus:outline-none focus:border-cyan-400/80 transition-all`}
+                />
+              ))}
+            </div>
+            {otpError && <p className="text-rose-400 text-xs">{otpError}</p>}
+          </div>
+
+          {/* Resend */}
+          <div className="flex items-center justify-between">
+            <p className="text-white/25 text-xs">Didn't receive it?</p>
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={fpLoading}
+              className="text-cyan-400/70 hover:text-cyan-400 text-xs transition-colors disabled:opacity-40"
+            >
+              Resend OTP
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-3 rounded-xl transition-all text-sm"
+          >
+            Verify OTP →
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  // ── RESET — Step: new password ──
+  // ────────────────────────────────────────
+  if (step === "reset") {
+    return (
+      <div className="flex flex-col gap-5">
+        <div>
+          <h3 className="text-white font-bold text-base mb-1">Set New Password</h3>
+          <p className="text-white/30 text-xs">OTP verified ✓ — Now choose a new password.</p>
+        </div>
+
+        <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
+          {/* New password */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-widest text-cyan-300/80">New Password</label>
+            <div className="relative">
+              <input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => { setNewPassword(e.target.value); setResetErrors({}); }}
+                placeholder="Min. 6 characters"
+                className={`w-full bg-white/5 border ${resetErrors.newPassword ? "border-rose-400/60" : "border-white/10"} rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-cyan-400/50 transition-all`}
+              />
+              <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 text-xs">
+                {showNew ? "HIDE" : "SHOW"}
+              </button>
+            </div>
+            {/* Strength bar */}
+            {newPassword && (
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex gap-1 flex-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength.score ? strength.color : "bg-white/10"}`} />
+                  ))}
+                </div>
+                <span className={`text-xs font-medium ${strength.color.replace("bg-", "text-")}`}>{strength.label}</span>
+              </div>
+            )}
+            {resetErrors.newPassword && <p className="text-rose-400 text-xs">{resetErrors.newPassword}</p>}
+          </div>
+
+          {/* Confirm password */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-widest text-cyan-300/80">Confirm Password</label>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); setResetErrors({}); }}
+                placeholder="Repeat new password"
+                className={`w-full bg-white/5 border ${resetErrors.confirmPassword ? "border-rose-400/60" : "border-white/10"} rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-cyan-400/50 transition-all`}
+              />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 text-xs">
+                {showConfirm ? "HIDE" : "SHOW"}
+              </button>
+              {confirmPassword && newPassword === confirmPassword && (
+                <span className="absolute right-12 top-1/2 -translate-y-1/2 text-emerald-400 text-xs">✓</span>
+              )}
+            </div>
+            {resetErrors.confirmPassword && <p className="text-rose-400 text-xs">{resetErrors.confirmPassword}</p>}
+          </div>
+
+          {resetErrors.general && (
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-rose-400 text-xs">
+              {resetErrors.general}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={fpLoading}
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+          >
+            {fpLoading ? <><LoadingSpinner /><span>Resetting...</span></> : <span>Reset Password →</span>}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  // ── SUCCESS ──
+  // ────────────────────────────────────────
+  if (step === "success") {
+    return (
+      <div className="flex flex-col items-center gap-5 py-4 text-center">
+        <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-full flex items-center justify-center text-3xl">
+          ✓
+        </div>
+        <div>
+          <h3 className="text-white font-bold text-base mb-1">Password Reset!</h3>
+          <p className="text-white/40 text-xs leading-relaxed">
+            Your password has been successfully updated. You can now sign in with your new password.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={resetFlow}
+          className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-3 rounded-xl text-sm"
+        >
+          Back to Sign In →
+        </button>
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  // ── DEFAULT: Login form ──
+  // ────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-      {/* Email */}
       <InputField
         label="Email Address"
         type="email"
@@ -48,7 +388,6 @@ export default function LoginForm({ onSubmit, isLoading, error, onForgotPassword
         error={errors.email}
       />
 
-      {/* Password */}
       <InputField
         label="Password"
         type={showPassword ? "text" : "password"}
@@ -57,77 +396,56 @@ export default function LoginForm({ onSubmit, isLoading, error, onForgotPassword
         onChange={handleChange("password")}
         error={errors.password}
       >
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-xs"
-        >
+        <button type="button" onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-xs">
           {showPassword ? "HIDE" : "SHOW"}
         </button>
       </InputField>
 
-      {/* Remember me & Forgot password */}
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 cursor-pointer group">
           <div
             onClick={() => setRememberMe(!rememberMe)}
-            className={`w-4 h-4 rounded border transition-all duration-200 flex items-center justify-center ${
-              rememberMe
-                ? "bg-cyan-500 border-cyan-500"
-                : "border-white/20 bg-white/5"
-            }`}
+            className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${rememberMe ? "bg-cyan-500 border-cyan-500" : "border-white/20 bg-white/5"}`}
           >
             {rememberMe && <span className="text-white text-[10px]">✓</span>}
           </div>
           <span className="text-white/40 text-xs group-hover:text-white/60 transition-colors">Remember me</span>
         </label>
+        {/* ✅ Forgot password triggers the flow */}
         <button
           type="button"
-          onClick={onForgotPassword}
+          onClick={() => setStep("forgot")}
           className="text-cyan-400/70 text-xs hover:text-cyan-400 transition-colors"
         >
           Forgot password?
         </button>
       </div>
 
-      {/* Error from parent */}
       {error && (
         <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-rose-400 text-xs">
           {error}
         </div>
       )}
 
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={isLoading}
-        className="relative w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 mt-1 flex items-center justify-center gap-2"
+        className="relative w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 mt-1 flex items-center justify-center gap-2"
       >
-        {isLoading ? (
-          <>
-            <LoadingSpinner />
-            <span>Signing in...</span>
-          </>
-        ) : (
-          <span>Sign In →</span>
-        )}
+        {isLoading ? <><LoadingSpinner /><span>Signing in...</span></> : <span>Sign In →</span>}
       </button>
 
-      {/* Divider */}
       <div className="flex items-center gap-3 my-1">
         <div className="flex-1 h-px bg-white/5" />
         <span className="text-white/20 text-xs">or continue with</span>
         <div className="flex-1 h-px bg-white/5" />
       </div>
 
-      {/* Social buttons */}
       <div className="grid grid-cols-2 gap-3">
         {["Google", "GitHub"].map((provider) => (
-          <button
-            key={provider}
-            type="button"
-            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white/80 text-xs font-medium py-2.5 rounded-xl transition-all duration-200"
-          >
+          <button key={provider} type="button"
+            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white/80 text-xs font-medium py-2.5 rounded-xl transition-all">
             {provider}
           </button>
         ))}

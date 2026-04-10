@@ -66,8 +66,9 @@ export async function loginUser(req, res) {
     const user = await User.findOne({ email: req.body.email });
     console.log(user);
 
+    // ✅ To this
     if (user == null) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     if (user.isBlocked) {
@@ -76,7 +77,7 @@ export async function loginUser(req, res) {
 
     const isPasswordCorrect = bcrypt.compareSync(req.body.password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const payload = {
