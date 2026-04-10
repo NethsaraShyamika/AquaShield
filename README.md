@@ -244,15 +244,3 @@ Not yet added in this repository. Suggested tool: Artillery.io.
 
 Not yet added in this repository.
 
-## Checklist vs Assignment Spec (Quick Audit)
-
-- **Express REST API (CRUD)**: ✅ (Users, Species, Reports, Cases)
-- **4+ components**: ✅ (Users, Species, Reports, Cases)
-- **MongoDB integration**: ✅ (Mongoose)
-- **Protected routes & role-based access**: ✅ (JWT/session + `isAdmin`), but ensure admin/user flows are demonstrated in viva
-- **Third‑party API integration**: ✅ (GBIF + Geocoding; also Nodemailer)
-- **Validation & error handling**: ✅ (users validation; controllers return status codes)
-- **Clean architecture / best practices**: ⚠️ partially (controllers/routes/middlewares exist; can be improved with services)
-- **API documentation (Swagger/Postman)**: ⚠️ Postman ✅, Swagger ❌
-- **Unit/Integration/Performance testing**: ⚠️ Unit ✅ (backend), Integration ✅ (backend), Performance ❌
-- **Deployment documentation**: ✅ (this section; add live URLs + screenshots before submission)
