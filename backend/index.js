@@ -25,12 +25,13 @@ app.set("trust proxy", 1);
 
 // Session configuration
 app.use(session({
-  secret: "aquashield_secret",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // set true in production with HTTPS
-    maxAge: 1000 * 60 * 60 * 48 // 48 hours
+    secure: true,
+    sameSite: "none",
+    maxAge: 1000 * 60 * 60 * 48
   }
 }));
 
