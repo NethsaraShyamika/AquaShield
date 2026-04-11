@@ -447,6 +447,14 @@
           }
         },
         {
+          "name": "GET /api/cases/my",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/cases/my"
+          }
+        },
+        {
           "name": "GET /api/cases (admin)",
           "request": {
             "method": "GET",
