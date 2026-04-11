@@ -29,7 +29,6 @@ describe("Report API", () => {
 
     expect(res.statusCode).toBe(201);
 
-    // ✅ FIX HERE
     expect(res.body.report).toHaveProperty("_id");
   });
 
@@ -45,7 +44,4 @@ describe("Report API", () => {
 
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
   });
-
-  
-
 });
