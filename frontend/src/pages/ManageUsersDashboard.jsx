@@ -33,6 +33,9 @@ const ManageUsersDashboard = () => {
     fetchUsers();
   }, [navigate]);
 
+  // ✅ Helper to filter out admin users
+  const filterNonAdmins = (userList) => userList.filter(user => !user.isAdmin);
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -40,13 +43,15 @@ const ManageUsersDashboard = () => {
       const response = await axios.get('/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data);
+      // ✅ Exclude admin users from the list
+      const nonAdminUsers = filterNonAdmins(response.data);
+      setUsers(nonAdminUsers);
       
-      // Calculate stats
-      const total = response.data.length;
-      const active = response.data.filter(u => !u.isBlocked).length;
-      const blocked = response.data.filter(u => u.isBlocked).length;
-      const verified = response.data.filter(u => u.isEmailVerified).length;
+      // Calculate stats based on non-admin users
+      const total = nonAdminUsers.length;
+      const active = nonAdminUsers.filter(u => !u.isBlocked).length;
+      const blocked = nonAdminUsers.filter(u => u.isBlocked).length;
+      const verified = nonAdminUsers.filter(u => u.isEmailVerified).length;
       setStats({ total, active, blocked, verified });
     } catch (err) {
       setError('Failed to fetch users');
@@ -67,7 +72,9 @@ const ManageUsersDashboard = () => {
       const response = await axios.get(`/api/users/search?query=${query}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data);
+      // ✅ Exclude admin users from search results
+      const nonAdminUsers = filterNonAdmins(response.data);
+      setUsers(nonAdminUsers);
     } catch {
       setError('Search failed');
     } finally {
@@ -81,7 +88,7 @@ const ManageUsersDashboard = () => {
       await axios.put(`/api/users/block/${uid}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchUsers();
+      fetchUsers(); // refresh list
     } catch {
       alert('Failed to block user');
     }
@@ -93,13 +100,14 @@ const ManageUsersDashboard = () => {
       await axios.put(`/api/users/unblock/${uid}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchUsers();
+      fetchUsers(); // refresh list
     } catch {
       alert('Failed to unblock user');
     }
   };
 
   const exportToCSV = () => {
+    // Only export non-admin users
     const headers = ['UID', 'Email', 'First Name', 'Last Name', 'Blocked', 'Verified'];
     const csvData = users.map(user => [
       user.uid,
@@ -132,6 +140,7 @@ const ManageUsersDashboard = () => {
     navigate(path);
   };
 
+  // Local filtering (already excludes admins because users state never contains them)
   const filteredUsers = users.filter(user =>
     user.uid?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -219,7 +228,7 @@ const ManageUsersDashboard = () => {
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards (based on non-admin users only) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-2xl p-5 shadow-xl">
                 <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/20 border border-cyan-500/30 mb-3">

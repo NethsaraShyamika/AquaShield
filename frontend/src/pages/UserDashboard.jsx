@@ -803,7 +803,7 @@ export default function UserDashboard() {
   const [showEditProfile, setShowEditProfile]         = useState(false);
   const profileMenuRef = useRef(null);
 
-  const token       = useMemo(() => tokenFromStorage(), []);
+  const [token, setToken] = useState(() => tokenFromStorage());
   const userPayload = useMemo(() => decodeJwtPayload(token), [token]);
   const firstName   = userPayload?.firstName || "Fisher";
 
@@ -963,7 +963,11 @@ export default function UserDashboard() {
     <main>
       {/* EditProfile Modal */}
       {showEditProfile && (
-        <EditProfile onClose={() => setShowEditProfile(false)} onUpdated={(u) => { console.log("Profile updated:", u); setShowEditProfile(false); }} />
+        <EditProfile onClose={() => setShowEditProfile(false)} onUpdated={(u) => { 
+          console.log("Profile updated:", u); 
+          setToken(tokenFromStorage()); 
+          setShowEditProfile(false); 
+        }} />
       )}
 
       {/* Banners */}
