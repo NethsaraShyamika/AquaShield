@@ -43,8 +43,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     email: user?.email || "",
   });
 
-  // ── Password change with OTP ──
-  // pwStep: "idle" | "sending" | "otp" | "verified"
+  
   const [pwStep, setPwStep] = useState("idle");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -103,7 +102,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
-  // ── Send OTP to user's email for password change ──
+ 
   const handleRequestPasswordOtp = async () => {
     setOtpLoading(true);
     try {
@@ -123,7 +122,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     }
   };
 
-  // ── OTP input helpers ──
+  
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const next = [...otp];
@@ -149,7 +148,6 @@ export default function EditProfile({ onClose, onUpdated }) {
     setOtp(next);
   };
 
-  // ── Verify OTP for password change ──
   const handleVerifyOtp = async () => {
     if (otp.join("").length < 6) {
       setOtpError("Please enter the complete 6-digit OTP");
@@ -157,9 +155,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     }
     setOtpLoading(true);
     try {
-      // We verify by attempting reset with a dummy check — 
-      // actual verification happens during final save
-      // Just mark as verified and proceed to password entry
+      
       setOtpError("");
       setPwStep("verified");
       showToast("OTP verified! Now set your new password ✓", "success");
@@ -170,7 +166,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     }
   };
 
-  // ── Password strength ──
+
   const getStrength = (pw) => {
     if (!pw) return { score: 0, label: "", color: "" };
     let score = 0;
@@ -192,12 +188,12 @@ export default function EditProfile({ onClose, onUpdated }) {
 
   const strength = getStrength(newPassword);
 
-  // ── Submit profile update ──
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    // If user wants to change password, validate password fields
+   
     if (pwStep === "verified") {
       const errs = {};
       if (!newPassword) errs.newPassword = "Password is required";
@@ -225,7 +221,7 @@ export default function EditProfile({ onClose, onUpdated }) {
         if (!resetRes.ok) throw new Error(resetData.message || "Password reset failed — OTP may have expired");
       }
 
-      // Update profile details
+      
       const formData = new FormData();
       formData.append("firstName", form.firstName);
       formData.append("lastName", form.lastName);
@@ -255,7 +251,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     }
   };
 
-  // ── Delete account ──
+
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") { showToast('Please type "DELETE" to confirm', "error"); return; }
     if (!deleteReason) { showToast("Please select a reason", "error"); return; }
@@ -283,7 +279,7 @@ export default function EditProfile({ onClose, onUpdated }) {
       ? `http://localhost:5000${currentImage}`
       : null);
 
-  // ── Goodbye screen ──
+ 
   if (deleteSuccess) {
     return (
       <div className="fixed inset-0 z-50 bg-[#020e1f] flex items-center justify-center p-6">
@@ -309,7 +305,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     );
   }
 
-  // ── Delete confirmation screen ──
+  
   if (showDeleteConfirm) {
     return (
       <>
@@ -376,7 +372,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     );
   }
 
-  // ── Main Edit Profile Modal ──
+ 
   return (
     <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

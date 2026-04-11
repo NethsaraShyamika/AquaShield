@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const navLinks = ["Home", "About", "Services", "Contact"];
 
-// Navbar
+
 const Navbar = ({ activePage, setActivePage }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ const Navbar = ({ activePage, setActivePage }) => {
   );
 };
 
-// Ocean background
+
 const OceanBackground = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none">
     <div className="absolute inset-0 bg-gradient-to-b from-[#020e1f] via-[#041828] to-[#061e35]" />
@@ -106,7 +106,7 @@ const OceanBackground = () => (
   </div>
 );
 
-// ✅ Image Carousel Component
+
 const carouselImages = [
   {
     url: "https://images.unsplash.com/photo-1733723005299-377af7deacac?q=80&w=1334&auto=format&fit=crop",
@@ -197,7 +197,7 @@ const ImageCarousel = () => {
   );
 };
 
-// Contact info cards
+
 const contactInfo = [
   { icon: "📧", title: "Email Us", value: "aquashield@gmail.com", sub: "We reply within 24 hours", color: "from-cyan-500/20 to-blue-600/20", border: "hover:border-cyan-500/30" },
   { icon: "📞", title: "Call Us", value: "+94 11 234 5678", sub: "Mon–Fri, 9am–6pm IST", color: "from-teal-500/20 to-cyan-600/20", border: "hover:border-teal-500/30" },
@@ -205,7 +205,7 @@ const contactInfo = [
   { icon: "🕐", title: "Working Hours", value: "24/7 Report Hotline", sub: "Emergency reports anytime", color: "from-indigo-500/20 to-blue-600/20", border: "hover:border-indigo-500/30" },
 ];
 
-// FAQ data
+
 const faqs = [
   { q: "How do I report illegal fishing activity?", a: "Sign up for a free account, navigate to Reports and click Submit Report. Fill in the location, vessel details, and attach any photo or video evidence you have captured." },
   { q: "What happens after I submit a report?", a: "Our team reviews your report within 24 hours. Verified reports are escalated to marine enforcement officers and a formal case is created. You will receive status updates via email." },
@@ -214,7 +214,7 @@ const faqs = [
   { q: "What species are in the database?", a: "Our database covers hundreds of marine species found in the Indian Ocean and beyond, including endangered, protected and commercially exploited species." },
 ];
 
-// Input field component
+
 const FormInput = ({ label, type = "text", placeholder, value, onChange, error }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-xs font-semibold uppercase tracking-widest text-cyan-300/70">{label}</label>

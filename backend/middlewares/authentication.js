@@ -11,7 +11,7 @@ function normalizeAuthToken(headerValue) {
     token = token.replace(/^Bearer\s+/i, "");
   }
   token = token.trim();
-  // Remove accidental quotes
+ 
   if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) {
     token = token.slice(1, -1);
   }
@@ -25,7 +25,7 @@ export default function authenticateUser(req, res, next) {
     return next();
   }
 
-  // 2. Check Authorization header
+
   const header = req.headers['authorization'];
   if (!header) {
     return res.status(401).json({ message: "Not authenticated – no token provided" });
@@ -40,7 +40,7 @@ export default function authenticateUser(req, res, next) {
     if (error) {
       return res.status(401).json({ message: "Invalid or expired token. Please login again." });
     }
-    // decoded contains the JWT payload (id, email, firstName, etc.)
+    
     req.user = decoded;
     next();
   });

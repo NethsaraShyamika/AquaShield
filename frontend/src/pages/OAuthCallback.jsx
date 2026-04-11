@@ -10,7 +10,7 @@ export default function OAuthCallback() {
     const error = searchParams.get("error");
 
     if (error === "blocked") {
-      // ✅ Redirect to login with blocked message
+     
       navigate("/login?error=blocked");
       return;
     }

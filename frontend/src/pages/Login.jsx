@@ -7,8 +7,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // ── Forgot password flow ──
-  // step: "login" | "forgot" | "otp" | "reset" | "success"
+
   const [step, setStep] = useState("login");
   const [fpEmail, setFpEmail] = useState("");
   const [fpEmailError, setFpEmailError] = useState("");
@@ -21,7 +20,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
   const [resetErrors, setResetErrors] = useState({});
   const [fpLoading, setFpLoading] = useState(false);
 
-  // ── Login ──
+
   const validate = () => {
     const e = {};
     if (!formData.email) e.email = "Email is required";
@@ -41,7 +40,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
-  // ── Step 1: Send OTP to email ──
+  
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!fpEmail || !/\S+@\S+\.\S+/.test(fpEmail)) {
@@ -66,7 +65,6 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     }
   };
 
-  // ── OTP input helpers ──
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const next = [...otp];
@@ -92,7 +90,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     setOtp(next);
   };
 
-  // ── Step 2: Verify OTP (just move to reset step) ──
+  
   const handleVerifyOtp = (e) => {
     e.preventDefault();
     if (otp.join("").length < 6) {
@@ -103,7 +101,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     setStep("reset");
   };
 
-  // ── Step 3: Reset password ──
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     const errs = {};
@@ -142,7 +140,6 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     setResetErrors({});
   };
 
-  // ── PASSWORD STRENGTH ──
   const getStrength = (pw) => {
     if (!pw) return { score: 0, label: "", color: "" };
     let score = 0;
@@ -164,9 +161,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
 
   const strength = getStrength(newPassword);
 
-  // ────────────────────────────────────────
-  // ── FORGOT — Step: enter email ──
-  // ────────────────────────────────────────
+
   if (step === "forgot") {
     return (
       <div className="flex flex-col gap-5">
@@ -203,9 +198,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     );
   }
 
-  // ────────────────────────────────────────
-  // ── OTP — Step: verify OTP ──
-  // ────────────────────────────────────────
+  
   if (step === "otp") {
     return (
       <div className="flex flex-col gap-5">
@@ -267,9 +260,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     );
   }
 
-  // ────────────────────────────────────────
-  // ── RESET — Step: new password ──
-  // ────────────────────────────────────────
+
   if (step === "reset") {
     return (
       <div className="flex flex-col gap-5">
@@ -347,9 +338,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     );
   }
 
-  // ────────────────────────────────────────
-  // ── SUCCESS ──
-  // ────────────────────────────────────────
+
   if (step === "success") {
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
@@ -373,9 +362,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     );
   }
 
-  // ────────────────────────────────────────
-  // ── DEFAULT: Login form ──
-  // ────────────────────────────────────────
+ 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <InputField

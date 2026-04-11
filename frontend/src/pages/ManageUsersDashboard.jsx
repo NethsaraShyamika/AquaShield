@@ -33,7 +33,7 @@ const ManageUsersDashboard = () => {
     fetchUsers();
   }, [navigate]);
 
-  // ✅ Helper to filter out admin users
+ 
   const filterNonAdmins = (userList) => userList.filter(user => !user.isAdmin);
 
   const fetchUsers = async () => {
@@ -43,11 +43,11 @@ const ManageUsersDashboard = () => {
       const response = await axios.get('/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // ✅ Exclude admin users from the list
+      
       const nonAdminUsers = filterNonAdmins(response.data);
       setUsers(nonAdminUsers);
       
-      // Calculate stats based on non-admin users
+     
       const total = nonAdminUsers.length;
       const active = nonAdminUsers.filter(u => !u.isBlocked).length;
       const blocked = nonAdminUsers.filter(u => u.isBlocked).length;
@@ -72,7 +72,7 @@ const ManageUsersDashboard = () => {
       const response = await axios.get(`/api/users/search?query=${query}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // ✅ Exclude admin users from search results
+     
       const nonAdminUsers = filterNonAdmins(response.data);
       setUsers(nonAdminUsers);
     } catch {
@@ -107,7 +107,7 @@ const ManageUsersDashboard = () => {
   };
 
   const exportToCSV = () => {
-    // Only export non-admin users
+    
     const headers = ['UID', 'Email', 'First Name', 'Last Name', 'Blocked', 'Verified'];
     const csvData = users.map(user => [
       user.uid,
