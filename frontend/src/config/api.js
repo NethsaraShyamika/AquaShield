@@ -14,14 +14,10 @@ export function apiUrl(path) {
 /** Backend origin (scheme + host) for OAuth redirects and absolute upload URLs. */
 export function getBackendOrigin() {
   const base = import.meta.env.VITE_API_BASE_URL;
+
   if (base && /^https?:\/\//i.test(base)) {
-    try {
-      const normalized = base.replace(/\/$/, "");
-      const url = new URL(normalized.endsWith("/api") ? normalized : `${normalized}/api`);
-      return url.origin;
-    } catch {
-      /* ignore */
-    }
+    return base.replace(/\/api\/?$/, "");
   }
+
   return "http://localhost:5000";
 }
