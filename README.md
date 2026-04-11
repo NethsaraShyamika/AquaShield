@@ -7,12 +7,25 @@ AquaShield is a group project for **illegal fishing monitoring**, **protected ma
 
 ---
 
+# 🚀 Production Deployment Status
+
+🟢 Backend: Render  
+🟢 Frontend: Vercel  
+🟢 Database: MongoDB Atlas  
+
+---
+
 ## 1. Setup Instructions
 
 ### Prerequisites
-- **Node.js** (v18 or higher recommended)
-- **MongoDB Atlas** (or local MongoDB) connection string
-- Accounts for third-party integrations: Cloudinary (image uploads), OpenCage (geocoding), Nodemailer (email)
+- Node.js (v18 or higher recommended)
+- MongoDB Atlas (or local MongoDB) connection string
+- Accounts for third-party integrations:
+  - Cloudinary (image uploads)
+  - OpenCage (geocoding)
+  - Nodemailer (email service)
+
+---
 
 ### Step-by-Step Guide
 
@@ -178,12 +191,37 @@ AquaShield is a group project for **illegal fishing monitoring**, **protected ma
 
 ## 3. Deployment Report
 
-### Live URLs
+📌 This deployment follows CI/CD workflows using GitHub integration with Render and Vercel.
+
+### 🌐 Live URLs
 - **Deployed Backend API:** [https://aquashield-fmy9.onrender.com](https://aquashield-fmy9.onrender.com)
 - **Deployed Frontend Application:** [https://aqua-shield-five.vercel.app](https://aqua-shield-five.vercel.app)
 
+✔ Both backend and frontend are deployed and publicly accessible without requiring local setup.
+
 ### Screenshots / Evidence
-*[Students to insert screenshots here showing successful Vercel and Render deployments, live UI, and API testing over the live URL]*
+
+### 📸 Backend Deployment Evidence (Render)
+
+![Backend Status](https://img.shields.io/badge/Backend-Live-green)
+
+![Render Deployment](docs/images/render-deploy.png)
+
+---
+
+✔ Backend service status: Live (Running on Render Free Tier)
+
+---
+
+### 📸 Frontend Deployment Evidence (Vercel)
+
+![Frontend Status](https://img.shields.io/badge/Frontend-Live-blue)
+
+![Vercel Deployment](docs/images/vercel-deploy.png)
+
+---
+
+✔ Frontend deployment: Successfully built and deployed via Vercel CI/CD
 
 ### Backend Deployment (Render)
 1. Created a new **Web Service** on [Render](https://render.com).
@@ -205,9 +243,10 @@ AquaShield is a group project for **illegal fishing monitoring**, **protected ma
 **Backend (Render) Variables:**
 - `PORT` (Provided by Render)
 - `MONGO_URI` (MongoDB connection URI)
+- `MONGO_URI_TEST` (MongoDB connection URI for Testing)
 - `JWT_SECRET` (Secret key for token signing)
 - `SESSION_SECRET` (Secret key for session management)
-- `CLIENT_ORIGINS` = `https://aqua-shield-five.vercel.app` (CORS whitelisting)
+- `CLIENT_ORIGINS` = `https://aqua-shield-five.vercel.app` (CORS whitelisting frontend origin) 
 - `CLOUDINARY_*` / `EMAIL_*` / `OPENCAGE_*` (Third-party integrations)
 
 **Frontend (Vercel) Variables:**
