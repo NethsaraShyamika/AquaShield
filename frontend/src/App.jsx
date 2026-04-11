@@ -12,6 +12,7 @@ import ServicePage from "./pages/ServicePage";
 import ContactPage from "./pages/ContactPage";
 import UserDashboard from "./pages/UserDashboard";
 import MyReports from "./pages/MyReports";
+import MyCases from "./pages/MyCases";
 import ReportForm from "./pages/ReportForm";
 import AuthPage from "./pages/AuthPage";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -97,6 +98,11 @@ function AnimatedRoutes() {
         <Route path="/my-reports" element={
           <UserRoute>
             <MyReports />
+          </UserRoute>
+        } />
+        <Route path="/my-cases" element={
+          <UserRoute>
+            <MyCases />
           </UserRoute>
         } />
         <Route path="/report-form" element={
