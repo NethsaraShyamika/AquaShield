@@ -136,7 +136,7 @@ const Navbar = ({ activePage, setActivePage }) => {
   );
 };
 
-// Ocean background - same as AuthPage
+
 const OceanBackground = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none">
     <div className="absolute inset-0 bg-gradient-to-b from-[#020e1f] via-[#041828] to-[#061e35]" />
@@ -160,7 +160,7 @@ const OceanBackground = () => (
   </div>
 );
 
-// Image Carousel Component for About Page Hero
+
 const aboutCarouselImages = [
   {
     url: "https://images.unsplash.com/photo-1771765302248-9b733668780f?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",

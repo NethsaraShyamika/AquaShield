@@ -160,7 +160,7 @@ export async function updateMyProfile(req, res) {
       updateData.image = req.body.image;
     }
 
-    // ✅ Skip password update for OAuth users or empty passwords
+    
     if (password && password.trim() !== "" &&
         !password.startsWith("google_oauth_") &&
         !password.startsWith("facebook_oauth_")) {
@@ -191,7 +191,7 @@ export async function updateMyProfile(req, res) {
       { expiresIn: "48h" }
     );
 
-    // ✅ Update session data to prevent stale session info for normal users
+    
     if (req.session && req.session.user) {
       req.session.user = { 
         ...req.session.user, 

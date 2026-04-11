@@ -1,6 +1,5 @@
 import { body, validationResult } from "express-validator";
 
-// ✅ Validation runner middleware
 export function validate(req, res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

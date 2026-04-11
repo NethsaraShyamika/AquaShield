@@ -15,32 +15,32 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user already exists
+        
         let user = await User.findOne({ email: profile.emails[0].value });
 
         if (user) {
-          // User exists — just return them
+          
           return done(null, user);
         }
 
-        // New user — create account
+        
         user = new User({
           firstName: profile.name.givenName,
           lastName: profile.name.familyName,
           email: profile.emails[0].value,
-          password: `google_oauth_${profile.id}`, // placeholder
+          password: `google_oauth_${profile.id}`, 
           image: profile.photos[0]?.value || "",
         });
 
         await user.save();
 
-        // ✅ Send welcome email to new Google user
+        
         try {
           await sendWelcomeEmail(user.email, user.firstName);
           console.log(`Welcome email sent to ${user.email}`);
         } catch (emailError) {
           console.error("Failed to send welcome email:", emailError.message);
-          // Don't block authentication – user is already created
+          
         }
 
         return done(null, user);
