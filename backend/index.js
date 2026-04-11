@@ -48,8 +48,13 @@ app.use("/api/reports", reportRoutes);
 
 app.use("/uploads", express.static("uploads"));
 
+const mongoURI =
+  process.env.NODE_ENV === "test"
+    ? process.env.MONGO_URI_TEST
+    : process.env.MONGO_URI;
+
 const connectWithRetry = (retries = 5, delay = 5000) => {
-  mongoose.connect(process.env.MONGO_URI)
+  mongoose.connect(mongoURI)
     .then(() => {
       console.log("MongoDB connection established successfully.");
     })
