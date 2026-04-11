@@ -14,6 +14,7 @@ import UserDashboard from "./pages/UserDashboard";
 import MyReports from "./pages/MyReports";
 import ReportForm from "./pages/ReportForm";
 import AuthPage from "./pages/AuthPage";
+import OAuthCallback from "./pages/OAuthCallback";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
@@ -97,6 +98,14 @@ function AnimatedRoutes() {
             </AdminRoute>
           }
         />
+
+        <Route
+          path="/oauth-callback"
+          element={<OAuthCallback />
+
+          }
+        />
+
 
         {/* ✅ FIXED: Single User Management Route - PROPERLY PROTECTED */}
         <Route
