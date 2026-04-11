@@ -19,15 +19,12 @@ export async function createUser(req, res) {
 
     await newUser.save();
 
-    // ✅ Separate try/catch for email so it doesn't break user creation
     try {
       await sendWelcomeEmail(data.email, data.firstName);
     } catch (emailError) {
       console.log("Email sending failed:", emailError.message);
-      // don't return error, user is already created
     }
 
-    // ✅ Generate token for automatic login after signup
     const payload = {
       id: newUser._id,
       email: newUser.email,
@@ -41,7 +38,6 @@ export async function createUser(req, res) {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "48h" });
 
-    // ✅ Save user to session
     req.session.user = payload;
     req.session.save((err) => {
       if (err) console.log("Session save error:", err);
@@ -67,7 +63,7 @@ export async function loginUser(req, res) {
     console.log(user);
 
     if (user == null) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     if (user.isBlocked) {
@@ -76,7 +72,7 @@ export async function loginUser(req, res) {
 
     const isPasswordCorrect = bcrypt.compareSync(req.body.password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const payload = {
@@ -93,7 +89,6 @@ export async function loginUser(req, res) {
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "48h" });
     console.log(token);
 
-    // ✅ Save user to session
     req.session.user = payload;
     req.session.save((err) => {
       if (err) console.log("Session save error:", err);
@@ -119,6 +114,22 @@ export async function logoutUser(req, res) {
   }
 }
 
+export async function getMyProfile(req, res) {
+  try {
+    // ✅ Accept both `id` and `_id`
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated – user ID missing" });
+    }
+    const user = await User.findById(userId).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({ message: "Error fetching profile", error: error.message });
+  }
+}
+
 export async function getAllUsers(req, res) {
   try {
     const users = await User.find().select("-password");
@@ -131,53 +142,75 @@ export async function getAllUsers(req, res) {
 
 export async function updateMyProfile(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated – user ID missing" });
+    }
 
     const { email, firstName, lastName, password } = req.body;
-
     const updateData = {};
 
     if (email) updateData.email = email;
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
 
-    // ✅ Handle uploaded image file from multer
     if (req.file) {
       updateData.image = `/uploads/profiles/${req.file.filename}`;
     } else if (req.body.image) {
       updateData.image = req.body.image;
     }
 
-    // ✅ If user changes password
-    if (password) {
-      const hashedPassword = bcrypt.hashSync(password, 10);
-      updateData.password = hashedPassword;
+    
+    if (password && password.trim() !== "" &&
+        !password.startsWith("google_oauth_") &&
+        !password.startsWith("facebook_oauth_")) {
+      updateData.password = bcrypt.hashSync(password, 10);
     }
 
-    // ❌ Block users from changing system fields
     if (req.body.isAdmin || req.body.isBlocked) {
       return res.status(403).json({ message: "You cannot change system fields" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // ✅ Generate NEW token with updated data
-    const newToken = jwt.sign({
-      id: updatedUser._id,
-      email: updatedUser.email,
-      firstName: updatedUser.firstName,
-      lastName: updatedUser.lastName,
-      isAdmin: updatedUser.isAdmin,
-      isBlocked: updatedUser.isBlocked,
-      image: updatedUser.image,
-      uid: updatedUser.uid,
-    }, JWT_SECRET, { expiresIn: "48h" });
+    const newToken = jwt.sign(
+      {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        isAdmin: updatedUser.isAdmin,
+        isBlocked: updatedUser.isBlocked,
+        image: updatedUser.image,
+        uid: updatedUser.uid,
+      },
+      process.env.JWT_SECRET || "icomputers",
+      { expiresIn: "48h" }
+    );
+
+    
+    if (req.session && req.session.user) {
+      req.session.user = { 
+        ...req.session.user, 
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        image: updatedUser.image,
+        uid: updatedUser.uid,
+        id: updatedUser._id 
+      };
+      req.session.save((err) => {
+        if (err) console.error("Session update error:", err);
+      });
+    }
 
     res.json({ message: "Profile updated successfully", user: updatedUser, token: newToken });
-
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error updating profile" });
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Error updating profile", error: error.message });
   }
 }
 
@@ -193,7 +226,6 @@ export async function deleteOwnAccount(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Destroy session after deleting account
     req.session.destroy((error) => {
       if (error) {
         console.log("Session destroy error:", error);
@@ -207,7 +239,7 @@ export async function deleteOwnAccount(req, res) {
     res.status(500).json({ message: "Error deleting account" });
   }
 }
-// ✅ Step 1 - Send OTP to email
+
 export async function forgotPassword(req, res) {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -216,16 +248,13 @@ export async function forgotPassword(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate 6 digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP to database
     user.resetOtp = otp;
     user.resetOtpExpiry = expiry;
     await user.save();
 
-    // Send OTP email
     await sendOtpEmail(user.email, user.firstName, otp);
 
     res.json({ message: "OTP sent to your email" });
@@ -265,7 +294,6 @@ export async function searchUser(req, res) {
   }
 }
 
-// ✅ Step 2 - Verify OTP and reset password
 export async function resetPassword(req, res) {
   try {
     const { email, otp, newPassword } = req.body;
@@ -276,20 +304,16 @@ export async function resetPassword(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check OTP is correct
     if (user.resetOtp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // Check OTP is not expired
     if (user.resetOtpExpiry < new Date()) {
       return res.status(400).json({ message: "OTP has expired" });
     }
 
-    // Hash new password
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
-    // Update password and clear OTP
     user.password = hashedPassword;
     user.resetOtp = null;
     user.resetOtpExpiry = null;
@@ -304,7 +328,6 @@ export async function resetPassword(req, res) {
     res.status(500).json({ message: "Error resetting password" });
   }
 }
-
 
 export async function blockUser(req, res) {
   try {
@@ -326,8 +349,6 @@ export async function blockUser(req, res) {
   }
 }
 
-
-
 export async function unblockUser(req, res) {
   try {
     const user = await User.findOneAndUpdate(
@@ -348,7 +369,6 @@ export async function unblockUser(req, res) {
   }
 }
 
-// ✅ Fixed: proper Express middleware (not a true/false function)
 export function isAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ message: "Not authenticated" });
