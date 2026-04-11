@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Fish, FileText, Briefcase, Settings,
-  LogOut, Shield, Search, Filter
+  LogOut, Shield, Search, Filter, Eye
 } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
@@ -392,12 +392,23 @@ export default function AdminReports() {
                               {new Date(report.createdAt).toLocaleDateString()}
                             </td>
                             <td className="px-4 py-3">
-                              <button
-                                onClick={() => setSelected(report)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 transition-all"
-                              >
-                                Update
-                              </button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/admin/reports/${report._id}`)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 bg-white/10 border border-white/15 hover:bg-white/15 transition-all"
+                                >
+                                  <Eye size={14} />
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelected(report)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 transition-all"
+                                >
+                                  Update
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -422,7 +433,7 @@ export default function AdminReports() {
                     disabled={page === 1}
                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
                   >
-                    ← Prev
+                    Prev
                   </button>
                   <span className="text-sm text-white/40">Page {page} of {pages}</span>
                   <button
@@ -430,7 +441,7 @@ export default function AdminReports() {
                     disabled={page === pages}
                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
                   >
-                    Next →
+                    Next
                   </button>
                 </div>
               )}

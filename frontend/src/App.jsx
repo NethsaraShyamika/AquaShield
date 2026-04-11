@@ -23,6 +23,7 @@ import CaseManagement from "./pages/CaseManagement";
 import AdminReports from "./pages/AdminReports";
 import ManageUsersDashboard from "./pages/ManageUsersDashboard";
 import AdminRoute from "./components/AdminRoute";
+import ReportDetail from "./pages/Report";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -103,6 +104,16 @@ function AnimatedRoutes() {
             <ReportForm />
           </UserRoute>
         } />
+        <Route
+          path="/my-reports/:id"
+          element={
+            <UserRoute>
+              <PageTransition>
+                <ReportDetail />
+              </PageTransition>
+            </UserRoute>
+          }
+        />
 
         {/* Admin (Protected) */}
         <Route
@@ -144,6 +155,16 @@ function AnimatedRoutes() {
           element={
             <AdminRoute>
               <AdminReports />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/reports/:id"
+          element={
+            <AdminRoute>
+              <PageTransition>
+                <ReportDetail />
+              </PageTransition>
             </AdminRoute>
           }
         />

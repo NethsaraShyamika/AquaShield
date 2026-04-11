@@ -1,24 +1,86 @@
-# AquaShield (Full‑Stack)
+# AquaShield — Full-Stack Application
 
-Group academic project to monitor illegal fishing activities, manage protected marine species, and streamline case handling.
+**Module:** SE3040 – Application Frameworks (Year 3, 2026)  
+**Programme:** BSc (Hons) in Information Technology — Software Engineering  
 
-## Tech Stack
+AquaShield is a group project for **illegal fishing monitoring**, **protected marine species management**, and **incident report / case handling**. It consists of an **Express.js REST API** (MongoDB) and a **React (Vite)** frontend styled with **Tailwind CSS**.
 
-- **Backend**: Node.js + Express (REST API), MongoDB (Mongoose), JWT + Session, Multer uploads, Nodemailer, third‑party APIs (GBIF + Geocoding)
-- **Frontend**: React (Vite), React Router, Axios, Tailwind CSS
-- **Deployment**: Backend on Render, Frontend on Vercel
+---
+
+## How This Project Maps to the Assignment Specification
+
+### Part 1 — Secure RESTful API (Express.js)
+
+| Requirement | How AquaShield addresses it |
+|-------------|----------------------------|
+| **RESTful API** | Resources under `/api/users`, `/api/species`, `/api/reports`, `/api/cases` using standard HTTP verbs and status codes. |
+| **≥ 4 components** | **User management**, **Species**, **Reports**, **Cases** — each with defined responsibilities and endpoints. |
+| **CRUD + business logic** | Create/read/update/delete (where applicable) exposed via routes; controllers contain validation and rules (e.g. report status, admin-only actions). |
+| **Third-party API** | **GBIF** (species search/enrichment), **OpenCage** (reverse geocoding for cases), **Nodemailer** (email), **Cloudinary** (evidence uploads). |
+| **MongoDB** | **Mongoose** models and persistence for users, species, reports, cases. |
+| **Protected routes & roles** | **JWT** (`Authorization: Bearer <token>`) and **express-session**; **admin** vs **user** enforced via middleware and controller checks. |
+| **Validation & errors** | **express-validator** on user routes; consistent JSON error responses and HTTP codes (400, 401, 403, 404, 500, etc.). |
+| **Clean structure** | Separation into `routes/`, `controllers/`, `models/`, `middlewares/`, `utils/`. |
+| **API documentation** | **Postman** collection under `docs/postman/` (Swagger optional / not included). |
+
+### Part 2 — React Frontend
+
+| Requirement | How AquaShield addresses it |
+|-------------|----------------------------|
+| **Functional components & hooks** | Pages and components built with **function components** and **React Hooks** (`useState`, `useEffect`, `useCallback`, etc.). |
+| **State management** | Primarily **local component state** and **React Router**; auth token/user data in **localStorage** where needed. *(Context API / Redux can be added for global state if you extend the project.)* |
+| **API integration** | `fetch` / Axios-style usage against `/api/...` (dev proxy in Vite to backend). Admin/user flows: users, species CRUD, reports with **pagination/filter/search**, cases. |
+| **UI/UX** | **Tailwind CSS** for layout, responsive admin dashboards and user pages. |
+| **Session handling** | Backend **sessions** + **JWT**; frontend stores **JWT** after login and sends it on protected requests; CORS `credentials` where applicable. |
+| **Deployment** | Backend intended for **Render**; frontend for **Vercel** (see [Deployment](#deployment-report)). |
+
+---
+
+## Functional Requirements by Component (≥ 4)
+
+### 1. User management (`/api/users`)
+
+- Register, login, logout; optional password reset via OTP email.
+- Authenticated users: view/update own profile (`GET/PUT /me`), delete own account.
+- Admins: list users, search users, block/unblock users.
+
+### 2. Species catalogue (`/api/species`)
+
+- Public read: list species, get by id, filter finder, GBIF search/enrichment endpoints.
+- Admins: create, update, delete species records.
+
+### 3. Incident reports (`/api/reports`)
+
+- Users: submit reports (with optional evidence uploads), list/update/delete **own** reports (rules apply, e.g. only while **Pending**).
+- Admins: list all reports with **pagination** and **status filter**, get any report by id, update **status** and **admin note**.
+
+### 4. Cases (`/api/cases`)
+
+- Admins: create case from a report, list all cases, update/delete cases; geocoded location name via third-party API.
+- Users: view a case linked to **their** report (when permitted by backend logic).
+
+---
 
 ## Repository Structure
 
-- `AquaShield/backend`: Express REST API
-- `AquaShield/frontend`: React app (Vite)
+```
+AquaShield/
+├── backend/          # Express API (Node.js)
+├── frontend/         # React + Vite + Tailwind
+├── docs/
+│   └── postman/      # Postman collection
+└── README.md         # This file
+```
+
+---
 
 ## Setup Instructions (Local)
 
 ### Prerequisites
 
-- Node.js 18+ (recommended)
-- MongoDB Atlas connection string (or local MongoDB)
+- **Node.js** 18+ (recommended)
+- **MongoDB Atlas** (or local MongoDB) connection string
+- Optional: **Cloudinary**, **OpenCage**, **Gmail app password** for email — only if you use those features
 
 ### 1) Backend
 
@@ -27,7 +89,7 @@ cd AquaShield/backend
 npm install
 ```
 
-Create `AquaShield/backend/.env`:
+Create **`AquaShield/backend/.env`** (do **not** commit real secrets):
 
 ```bash
 PORT=5000
@@ -37,16 +99,16 @@ JWT_SECRET=your_jwt_secret
 SESSION_SECRET=your_session_secret
 CLIENT_ORIGIN=http://localhost:5173
 
-# email (Nodemailer)
+# Nodemailer (Gmail example)
 EMAIL_USER=your_email_address
-EMAIL_PASS=your_email_app_password
+EMAIL_PASS=your_app_password
 
-# (if used) Cloudinary uploads
+# Cloudinary (report evidence uploads)
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 
-# geocoding API key (OpenCage)
+# OpenCage (reverse geocoding for cases)
 OPENCAGE_API_KEY=...
 ```
 
@@ -56,7 +118,8 @@ Run:
 npm run dev
 ```
 
-Backend base URL (local): `http://localhost:5000`
+- **Base URL (local):** `http://localhost:5000`
+- **Health check:** `GET http://localhost:5000/` → `{ "message": "AquaShield backend is running." }`
 
 ### 2) Frontend
 
@@ -65,9 +128,10 @@ cd AquaShield/frontend
 npm install
 ```
 
-Create `AquaShield/frontend/.env`:
+Create **`AquaShield/frontend/.env`** for production or explicit API host:
 
 ```bash
+# Use full backend URL on Vercel; for local dev you can omit and rely on Vite proxy (see below)
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
@@ -77,170 +141,291 @@ Run:
 npm run dev
 ```
 
-Frontend URL (local): `http://localhost:5173`
+- **App (local):** `http://localhost:5173`
+- **Dev proxy:** `vite.config.js` proxies `/api` → `http://localhost:5000`, so relative `/api/...` calls work during development.
 
-## API Endpoint Documentation (REST)
+---
 
-Base URL: `/api`
+## Authentication
 
-### Auth / Users (`/api/users`)
+Most protected endpoints expect:
 
-- **POST** `/` — register user
-- **POST** `/login` — login (returns JWT, creates session)
-- **POST** `/logout` — logout (requires auth)
-- **PUT** `/me` — update own profile (requires auth; supports `multipart/form-data` with `image`)
-- **DELETE** `/me` — delete own account (requires auth)
-- **POST** `/forgot-password` — request OTP
-- **POST** `/reset-password` — reset password with OTP
-- **GET** `/` — list all users (**admin only**)
-- **GET** `/search?query=...` — search users (**admin only**)
-- **PUT** `/block/:id` — block user (**admin only**, uses `uid`)
-- **PUT** `/unblock/:id` — unblock user (**admin only**, uses `uid`)
+```http
+Authorization: Bearer <JWT>
+```
 
-### Species (`/api/species`)
+Login also establishes a **server session** (`express-session`). The frontend typically keeps the **JWT** in **localStorage** and attaches it to requests.
 
-- **GET** `/` — list species
-- **GET** `/:id` — get species by `id`
-- **POST** `/` — create species (**admin only**)
-- **PUT** `/:id` — update species (**admin only**)
-- **DELETE** `/:id` — delete species (**admin only**)
-- **GET** `/find?...` — filter by `bodyShape`, `tailShape`, `finType`, `colorPattern`
+**Admin-only** routes additionally require `isAdmin: true` in the token payload (set when an admin user logs in).
 
-#### Third‑Party API (GBIF)
+---
 
-- **GET** `/gbif/search?q=...` — search GBIF taxa
-- **GET** `/gbif/:gbifKey` — GBIF enriched info (details/media/occurrences)
-- **GET** `/:id/enrich` — merges local species + GBIF enrichment
+## API Endpoint Documentation
 
-### Reports (`/api/reports`)
+**API base path:** `/api`  
+Unless stated, request/response bodies are **JSON**.
 
-User endpoints:
+### Users — `/api/users`
 
-- **POST** `/` — create report (requires auth; `multipart/form-data` `evidence[]`)
-- **GET** `/my` — list my reports (requires auth)
-- **GET** `/my/:id` — get my report by id (requires auth)
-- **PUT** `/my/:id` — update my pending report (requires auth)
-- **DELETE** `/my/:id` — delete my pending report (requires auth)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/users` | No | Register |
+| POST | `/api/users/login` | No | Login → returns JWT + session |
+| POST | `/api/users/logout` | Yes | Logout / destroy session |
+| GET | `/api/users/me` | Yes | Current user profile |
+| PUT | `/api/users/me` | Yes | Update profile (`multipart/form-data` optional field `image`) |
+| DELETE | `/api/users/me` | Yes | Delete own account |
+| POST | `/api/users/forgot-password` | No | Send OTP to email |
+| POST | `/api/users/reset-password` | No | Reset password with OTP |
+| GET | `/api/users` | Admin | List users |
+| GET | `/api/users/search?query=...` | Admin | Search users |
+| PUT | `/api/users/block/:id` | Admin | Block user (`id` = user `uid`) |
+| PUT | `/api/users/unblock/:id` | Admin | Unblock user |
+| GET | `/api/users/session-test` | No | Session debug (dev/demo) |
 
-Admin endpoints:
+**Example — register**
 
-- **GET** `/` — list all reports (requires auth + admin; supports `status`, `page`, `limit`)
-- **GET** `/:id` — get report by id (requires auth + admin)
-- **PATCH** `/:id/status` — update report status (requires auth + admin)
+```http
+POST /api/users
+Content-Type: application/json
+```
 
-### Cases (`/api/cases`) (Protected)
+```json
+{
+  "email": "user@example.com",
+  "firstName": "Ada",
+  "lastName": "Lovelace",
+  "password": "secret123"
+}
+```
 
-All case routes require authentication.
+**Example — login response (shape)**
 
-- **POST** `/` — create case (**admin only**)
-- **GET** `/` — list all cases (**admin only**)
-- **GET** `/:id` — get case (admin OR report owner)
-- **PUT** `/:id` — update case (**admin only**)
-- **DELETE** `/:id` — delete case (**admin only**)
+```json
+{
+  "message": "Login successful",
+  "token": "<jwt>"
+}
+```
 
-## Validation & Error Handling
+**Validation errors (users):** `400` with `{ "errors": [ ... ] }` from `express-validator`.
 
-- **Input validation**: `express-validator` (users)
-- **HTTP status codes**: 200/201/400/401/403/404/500 used across controllers
+---
 
-## Deployment (as required)
+### Species — `/api/species`
 
-### Backend Deployment (Render)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/species/gbif/search?q=...` | No | Search GBIF |
+| GET | `/api/species/gbif/:gbifKey` | No | GBIF enriched payload |
+| GET | `/api/species/find?...` | No | Filter (e.g. `bodyShape`, `tailShape`, `finType`, `colorPattern`) |
+| GET | `/api/species` | No | List all |
+| GET | `/api/species/:id` | No | Get by business `id` |
+| GET | `/api/species/:id/enrich` | No | Local species + GBIF merge |
+| POST | `/api/species` | Admin | Create |
+| PUT | `/api/species/:id` | Admin | Update |
+| DELETE | `/api/species/:id` | Admin | Delete |
 
-- **Platform**: Render (Web Service)
-- **Root directory**: `AquaShield/backend`
-- **Build command**: `npm install`
-- **Start command**: `npm start`
+**Example — create species (admin)**
 
-Set these environment variables in Render (do not commit secrets):
+```http
+POST /api/species
+Authorization: Bearer <admin_jwt>
+Content-Type: application/json
+```
 
-- **`MONGO_URI`**
-- **`JWT_SECRET`**
-- **`SESSION_SECRET`**
-- **`CLIENT_ORIGIN`**: your Vercel URL, e.g. `https://your-app.vercel.app`
-- **`NODE_ENV`**: `production`
-- **Email / other keys**: `EMAIL_USER`, `EMAIL_PASS`, (optional) `CLOUDINARY_*`, (optional) `OPENCAGE_API_KEY`
+```json
+{
+  "id": "species-001",
+  "name": "Bluefin Tuna",
+  "scientificName": "Thunnus thynnus",
+  "protectionStatus": "Protected",
+  "description": "..."
+}
+```
 
-After deploy, verify:
+---
 
-- `GET /` returns `{ "message": "AquaShield backend is running." }`
+### Reports — `/api/reports`
 
-Live backend URL:
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/reports` | User | Create (`multipart/form-data`, optional `evidence` files) |
+| GET | `/api/reports/my` | User | List my reports |
+| GET | `/api/reports/my/:id` | User | Get my report |
+| PUT | `/api/reports/my/:id` | User | Update my pending report |
+| DELETE | `/api/reports/my/:id` | User | Delete my pending report |
+| GET | `/api/reports` | Admin | List all — query: `status`, `page`, `limit` |
+| GET | `/api/reports/:id` | Admin | Get any report |
+| PATCH | `/api/reports/:id/status` | Admin | Update `status`, `adminNote` |
 
-- **Backend API**: `https://<your-render-service>.onrender.com`
+**Example — admin list (pagination + filter)**
 
-### Frontend Deployment (Vercel)
+```http
+GET /api/reports?status=Pending&page=1&limit=10
+Authorization: Bearer <admin_jwt>
+```
 
-- **Platform**: Vercel
-- **Root directory**: `AquaShield/frontend`
+**Example — admin status update**
 
-Set environment variables in Vercel:
+```http
+PATCH /api/reports/<reportId>/status
+Authorization: Bearer <admin_jwt>
+Content-Type: application/json
+```
 
-- **`VITE_API_BASE_URL`**: your Render backend URL (e.g. `https://<your-render-service>.onrender.com`)
+```json
+{
+  "status": "Under Review",
+  "adminNote": "Assigned to field officer."
+}
+```
 
-Build/Output:
+**Example — create report (multipart fields)**
 
-- **Build command**: `npm run build`
-- **Output**: `dist`
+- Text fields: `incidentType`, `description`, `latitude`, `longitude`, `incidentDate`, `speciesInvolved` (JSON string or array as implemented)
+- Files: `evidence` (multiple, up to limit configured in backend)
 
-Live frontend URL:
+---
 
-- **Frontend App**: `https://<your-vercel-project>.vercel.app`
+### Cases — `/api/cases`
 
-### Deployment Evidence (add before submission)
+All routes require **authentication**.
 
-- **Screenshots**: Render service “Live”, Vercel deployment “Ready”, and working app screenshots
-- **URLs**: paste the two live URLs above
+| Method | Path | Role | Description |
+|--------|------|------|-------------|
+| POST | `/api/cases` | Admin | Create case (links to `reportId` in body) |
+| GET | `/api/cases` | Admin | List cases |
+| GET | `/api/cases/:id` | Admin or owner | Get case |
+| PUT | `/api/cases/:id` | Admin | Update |
+| DELETE | `/api/cases/:id` | Admin | Delete |
 
-## Testing Instructions (as required)
+---
 
-> Frontend automated tests are not included in this repository at the moment.
+## Validation & Error Handling (Summary)
 
-### Unit Testing
+- **Users:** `express-validator` chains + centralized `validate` middleware.
+- **Other modules:** Mongoose validation, controller checks, and explicit status codes.
+- Typical codes: **200/201** success, **400** bad input, **401** not authenticated, **403** forbidden, **404** not found, **500** server error.
 
-#### Backend (Jest)
+---
 
-Unit tests live in `AquaShield/backend/tests/`.
+## API Documentation (Postman)
+
+| Tool | Location / status |
+|------|-------------------|
+| **Postman** | Import `AquaShield/docs/postman/AquaShield.postman_collection.json`. Set collection variable `baseUrl` to `http://localhost:5000` or your deployed API. Login request can store `token` for authenticated calls. ||
+
+---
+
+## Deployment Report
+
+### Backend — Render
+
+1. Create a **Web Service** on [Render](https://render.com).
+2. Connect your Git repository; set **root directory** to `AquaShield/backend`.
+3. **Build command:** `npm install`  
+4. **Start command:** `npm start`
+5. Add environment variables in the Render dashboard (see table below).
+6. After deploy, open the service URL and confirm `GET /` returns the running message.
+
+**Deployed backend API (fill in after deploy):**  
+`https://<your-service>.onrender.com`
+
+### Frontend — Vercel
+
+1. Import the project on [Vercel](https://vercel.com).
+2. Set **root directory** to `AquaShield/frontend`.
+3. **Build command:** `npm run build`  
+4. **Output directory:** `dist`
+5. Set **`VITE_API_BASE_URL`** to your **full Render API origin** (e.g. `https://<your-service>.onrender.com`) so the browser can call the API in production (the Vite dev proxy is not used on Vercel).
+
+**Deployed frontend (fill in after deploy):**  
+`https://<your-project>.vercel.app`
+
+### Environment Variables (no secrets in Git)
+
+| Variable | Where used | Description |
+|----------|------------|-------------|
+| `MONGO_URI` | Render / local | Production MongoDB connection |
+| `JWT_SECRET` | Render / local | JWT signing secret |
+| `SESSION_SECRET` | Render / local | Express session secret |
+| `CLIENT_ORIGIN` | Render | Allowed CORS origin (your Vercel URL) |
+| `NODE_ENV` | Render | Set to `production` |
+| `EMAIL_USER`, `EMAIL_PASS` | Render / local | Nodemailer |
+| `CLOUDINARY_*` | Render / local | Evidence uploads |
+| `OPENCAGE_API_KEY` | Render / local | Reverse geocoding |
+| `VITE_API_BASE_URL` | Vercel | Public API base URL for the React app |
+
+### Deployment Evidence (for submission)
+
+- Screenshot: Render service **Live** and environment variables screen (blur secrets).
+- Screenshot: Vercel deployment **Ready** and domain settings.
+- Screenshot: browser showing **live frontend** calling **live API** (e.g. login or list species).
+- Paste **both live URLs** in this README before submission.
+
+---
+
+## Testing Instruction Report
+
+### 1) Unit testing (backend)
+
+- **Runner:** Jest (`AquaShield/backend`)
+- **Command:**
 
 ```bash
 cd AquaShield/backend
 npm test
 ```
 
-Covered examples:
+- **Examples:** `tests/utils.test.js`, `tests/utils/calculateStatus.test.js`
 
-- `tests/utils.test.js` (utility function test)
-- `tests/utils/calculateStatus.test.js` (utility function test)
+### 2) Integration testing (backend)
 
-### Integration Testing
+- **Tools:** Jest + Supertest + MongoDB (test DB)
+- **Command:** same as above (`npm test` runs all tests).
+- **Configuration:** set **`MONGO_URI_TEST`** in `backend/.env` to a **separate** database (never commit credentials).
+- **Example file:** `tests/report.test.js` (hits HTTP layer).
 
-#### Backend API (Supertest + MongoDB)
+**Note:** Integration tests expect an Express **`app`** export (e.g. `backend/app.js`) that mounts the same routes **without** calling `listen()`. If `app.js` is missing, add it and wire `index.js` to start the server using that app — otherwise Supertest cannot attach cleanly.
 
-Integration tests run against a **test database**. Ensure `MONGO_URI_TEST` is set in `AquaShield/backend/.env` (never commit real credentials).
+### 3) Performance testing (suggested — Artillery)
 
-```bash
-cd AquaShield/backend
-npm test
+Not automated in-repo; typical approach:
+
+1. Install Artillery: `npm install -g artillery`
+2. Create a scenario file (e.g. `docs/artillery/probe.yml`) targeting your deployed or local base URL.
+3. Example phases: warm-up, sustained load, spike.
+
+Example **minimal** `artillery` flow (adjust URL and paths):
+
+```yaml
+config:
+  target: "https://your-api.onrender.com"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+scenarios:
+  - name: "Health and public species"
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/species"
 ```
 
-Covered examples:
+Run: `artillery run docs/artillery/probe.yml`
 
-- `tests/report.test.js` (API test via Supertest)
+### 4) Testing environment configuration
 
-> Note: `tests/report.test.js` imports `../app.js`. Ensure your backend exposes an Express `app` instance at `AquaShield/backend/app.js` (recommended) so tests can run without binding a port.
+| Item | Detail |
+|------|--------|
+| Node version | Match local and CI (e.g. 18+) |
+| `MONGO_URI_TEST` | Separate Atlas database or local Mongo for tests |
+| Secrets | Never commit `.env`; use `.env.example` in repo if you add one |
 
-### Performance Testing
+---
 
-Not yet added in this repository. Suggested tool: Artillery.io.
+## License / Classification
 
-## API Documentation (Swagger/Postman)
-
-### Postman
-
-- **Collection**: `AquaShield/docs/postman/AquaShield.postman_collection.json`
-- Set `baseUrl` to your local/Render URL and login once to auto-store `token` (collection variable).
-
-### Swagger
-
-Not yet added in this repository.
-
+Course materials classification: **Public-SLIIT**. This README is written for coursework submission and demonstration purposes.
