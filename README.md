@@ -329,8 +329,8 @@ All routes require **authentication**.
 5. Add environment variables in the Render dashboard (see table below).
 6. After deploy, open the service URL and confirm `GET /` returns the running message.
 
-**Deployed backend API (fill in after deploy):**  
-`https://<your-service>.onrender.com`
+**Deployed backend API :**  
+`https://aquashield-fmy9.onrender.com`
 
 ### Frontend — Vercel
 
@@ -340,8 +340,8 @@ All routes require **authentication**.
 4. **Output directory:** `dist`
 5. Set **`VITE_API_BASE_URL`** to your **full Render API origin** (e.g. `https://<your-service>.onrender.com`) so the browser can call the API in production (the Vite dev proxy is not used on Vercel).
 
-**Deployed frontend (fill in after deploy):**  
-`https://<your-project>.vercel.app`
+**Deployed frontend:**  
+`https://aqua-shield-five.vercel.app/`
 
 ### Environment Variables (no secrets in Git)
 

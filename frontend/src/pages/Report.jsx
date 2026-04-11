@@ -5,6 +5,7 @@ import {
   Fish, Shield, MapPin, Calendar, User, ExternalLink,
   AlertTriangle, X, FileText, Paperclip,
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -45,7 +46,7 @@ export default function ReportDetail() {
 
   useEffect(() => {
     if (!id) return;
-    const endpoint = isAdmin ? `/api/reports/${id}` : `/api/reports/my/${id}`;
+    const endpoint = isAdmin ? apiUrl(`/reports/${id}`) : apiUrl(`/reports/my/${id}`);
     fetch(endpoint, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })

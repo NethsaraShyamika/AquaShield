@@ -7,9 +7,7 @@ import {
   LogOut, User, AlertTriangle, Clock, CheckCircle, X,
   Home, List, Eye, Scale,
 } from "lucide-react";
-
-// ─── API CONFIG ───────────────────────────────────────────────
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from "../config/api";
 
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STATUS_COLORS = {

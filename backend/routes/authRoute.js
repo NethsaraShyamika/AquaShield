@@ -5,7 +5,7 @@ import { sendWelcomeEmail } from "../utils/sendEmail.js";
 
 const authRouter = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "icomputers";
-const FRONTEND_URL = "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 
 authRouter.get(

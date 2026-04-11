@@ -8,6 +8,7 @@ import {
   Shield,
   X,
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 
 const STATUSES = [
   "All",
@@ -115,7 +116,7 @@ export default function MyCases() {
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    fetch("/api/cases/my", {
+    fetch(apiUrl("/cases/my"), {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((r) => r.json())

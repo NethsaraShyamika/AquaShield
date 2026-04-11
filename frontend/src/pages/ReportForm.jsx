@@ -14,6 +14,7 @@ import {
   Loader2,
   Paperclip,
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 
 // ─── CONSTANTS ────────────────────────────────────────────────
 const INCIDENT_TYPES = [
@@ -93,7 +94,7 @@ function SpeciesSelect({ selected, onChange }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/species", {
+    fetch(apiUrl("/species"), {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((r) => (r.ok ? r.json() : []))
@@ -289,7 +290,7 @@ export default function ReportForm() {
       selectedSpecies.forEach((s) => data.append("speciesInvolved[]", s._id));
       files.forEach((f) => data.append("evidence", f));
 
-      const res = await fetch("/api/reports", {
+      const res = await fetch(apiUrl("/reports"), {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: data,

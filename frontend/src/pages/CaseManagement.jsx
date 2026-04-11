@@ -9,8 +9,7 @@ import {
   MapPin, Loader2, RefreshCw, Lock, Gavel, CircleDot,
   XCircle, AlertTriangle, ChevronDown, Zap, Filter, X,
 } from "lucide-react";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL as API_BASE } from "../config/api";
 function getToken() { return localStorage.getItem("token"); }
 const authHeader = () => ({
   "Content-Type": "application/json",

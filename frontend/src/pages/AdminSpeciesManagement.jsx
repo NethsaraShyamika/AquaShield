@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, Fish, LayoutGrid, CalendarDays, LayoutDashboard, Briefcase, FileText, Users, Settings, LogOut } from "lucide-react";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL as API_BASE } from "../config/api";
 
 const PALETTE = {
   oceanBase: "#020e1f",

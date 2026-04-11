@@ -17,9 +17,9 @@ import {
   UserX, Activity, MapPin, Search, X,
   ChevronRight,
 } from "lucide-react";
+import { API_BASE_URL as API_BASE } from "../config/api";
 
 // ─── API CONFIG ───────────────────────────────────────────────
-const API_BASE = "http://localhost:5000/api";
 const getToken = () => localStorage.getItem("token");
 const authHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 const api = {

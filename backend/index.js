@@ -21,6 +21,8 @@ dotenv.config();
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Session configuration
 app.use(session({
   secret: "aquashield_secret",
@@ -36,10 +38,26 @@ function go() {
   console.log("Started...");
 }
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
+const corsOrigins = () => {
+  const fromEnv = (process.env.CLIENT_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const defaults = ["http://localhost:5173", "http://127.0.0.1:5173"];
+  return [...new Set([...defaults, ...fromEnv])];
+};
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      const allowed = corsOrigins();
+      if (allowed.includes(origin)) return callback(null, true);
+      callback(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use("/api/species", speciesRoutes);
 app.use("/api/cases", caseRoutes);

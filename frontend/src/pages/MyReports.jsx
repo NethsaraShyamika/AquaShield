@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Save,
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -157,7 +158,7 @@ function EditModal({ report, onClose, onSaved }) {
       data.append("latitude", lat);
       data.append("longitude", lng);
 
-      const res = await fetch(`/api/reports/my/${report._id}`, {
+      const res = await fetch(apiUrl(`/reports/my/${report._id}`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -522,7 +523,7 @@ export default function MyReports() {
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    fetch("/api/reports/my", {
+    fetch(apiUrl("/reports/my"), {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((r) => r.json())
@@ -532,7 +533,7 @@ export default function MyReports() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`/api/reports/my/${id}`, {
+      await fetch(apiUrl(`/reports/my/${id}`), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
