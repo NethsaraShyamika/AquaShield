@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from "../api/axios";
 import Papa from 'papaparse';
 import GenerateUsersPDF from "../components/GenerateUsersPDF";
 import { Users, LayoutDashboard, Fish, FileText, Briefcase, Settings, LogOut, Search, Shield, UserCheck, UserX, Download, FileText as FilePdf } from "lucide-react";
@@ -40,7 +40,7 @@ const ManageUsersDashboard = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users', {
+      const response = await api.get('/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -69,7 +69,7 @@ const ManageUsersDashboard = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/users/search?query=${query}`, {
+      const response = await api.get(`/users/search?query=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
      
@@ -85,7 +85,7 @@ const ManageUsersDashboard = () => {
   const blockUser = async (uid) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/users/block/${uid}`, {}, {
+      await api.put(`/users/block/${uid}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchUsers(); // refresh list
@@ -97,7 +97,7 @@ const ManageUsersDashboard = () => {
   const unblockUser = async (uid) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/users/unblock/${uid}`, {}, {
+      await api.put(`/users/unblock/${uid}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchUsers(); // refresh list

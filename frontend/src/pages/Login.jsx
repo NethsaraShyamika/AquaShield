@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { InputField, LoadingSpinner } from "./AuthPage";
+import { apiUrl, getBackendOrigin } from "../config/api";
 
 export default function LoginForm({ onSubmit, isLoading, error }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -50,7 +51,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
     setFpEmailError("");
     setFpLoading(true);
     try {
-      const res = await fetch("/api/users/forgot-password", {
+      const res = await fetch(apiUrl("/users/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: fpEmail }),
@@ -114,7 +115,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
 
     setFpLoading(true);
     try {
-      const res = await fetch("/api/users/reset-password", {
+      const res = await fetch(apiUrl("/users/reset-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: fpEmail, otp: otp.join(""), newPassword }),
@@ -431,7 +432,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => window.location.href = "http://localhost:5000/api/auth/google"}
+          onClick={() => { window.location.href = `${getBackendOrigin()}/api/auth/google`; }}
           className="w-full flex items-center justify-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/60 hover:text-white text-xs font-medium py-2.5 rounded-xl transition-all"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

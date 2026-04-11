@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiUrl, getBackendOrigin } from "../config/api";
 
 function getToken() {
   return localStorage.getItem("token") || sessionStorage.getItem("token") || "";
@@ -106,7 +107,7 @@ export default function EditProfile({ onClose, onUpdated }) {
   const handleRequestPasswordOtp = async () => {
     setOtpLoading(true);
     try {
-      const res = await fetch("/api/users/forgot-password", {
+      const res = await fetch(apiUrl("/users/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user?.email }),
@@ -208,7 +209,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     try {
       // If password change with OTP — use reset-password endpoint first
       if (pwStep === "verified" && newPassword) {
-        const resetRes = await fetch("/api/users/reset-password", {
+        const resetRes = await fetch(apiUrl("/users/reset-password"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -228,7 +229,7 @@ export default function EditProfile({ onClose, onUpdated }) {
       formData.append("email", form.email);
       if (imageFile) formData.append("image", imageFile);
 
-      const res = await fetch("/api/users/me", {
+      const res = await fetch(apiUrl("/users/me"), {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
@@ -257,7 +258,7 @@ export default function EditProfile({ onClose, onUpdated }) {
     if (!deleteReason) { showToast("Please select a reason", "error"); return; }
     setIsDeleting(true);
     try {
-      const res = await fetch("/api/users/me", {
+      const res = await fetch(apiUrl("/users/me"), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
@@ -276,7 +277,7 @@ export default function EditProfile({ onClose, onUpdated }) {
 
   const profileImageSrc = imagePreview ||
     (currentImage && currentImage !== "/images/default-profile.png"
-      ? `http://localhost:5000${currentImage}`
+      ? `${getBackendOrigin()}${currentImage}`
       : null);
 
  

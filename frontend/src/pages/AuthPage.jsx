@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"; // ✅ ADDED useEffect
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import LoginForm from "./Login";
 import SignupForm from "./Signup";
+import { apiUrl } from "../config/api";
 
 
 const Toast = ({ message, type, onClose }) => (
@@ -163,7 +164,7 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/users/login", {
+      const res = await fetch(apiUrl("/users/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -193,7 +194,7 @@ export default function AuthPage() {
     try {
       console.log("📤 Sending:", formData); // 👈 ADD THIS
 
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch(apiUrl("/users"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

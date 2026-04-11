@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Fish, FileText, Briefcase, Settings,
   LogOut, Shield, Search, Filter, Eye
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 
 const ADMIN_NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard",          icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -41,7 +42,7 @@ function StatusUpdateModal({ report, onClose, onUpdated }) {
   const handleSave = async () => {
     setLoading(true); setError("");
     try {
-      const res = await fetch(`/api/reports/${report._id}/status`, {
+      const res = await fetch(apiUrl(`/reports/${report._id}/status`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +167,7 @@ export default function AdminReports() {
     try {
       const params = new URLSearchParams({ page, limit: 10 });
       if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/reports?${params}`, {
+      const res = await fetch(apiUrl(`/reports?${params}`), {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       const data = await res.json();
