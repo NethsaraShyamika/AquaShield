@@ -9,6 +9,8 @@ import caseRoutes from "./routes/caseRoutes.js";
 import { isAdmin } from "./controllers/userController.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import session from "express-session";
+import passport from "./config/passport.js";
+import authRouter from "./routes/authRoute.js";
 
 // Force Google DNS to bypass router/hotspot DNS that can't resolve MongoDB Atlas SRV records
 dns.setDefaultResultOrder("ipv4first");
@@ -47,6 +49,8 @@ app.use("/api/users", userRouter);
 app.use("/api/reports", reportRoutes);
 
 app.use("/uploads", express.static("uploads"));
+app.use(passport.initialize());
+app.use("/api/auth", authRouter);
 
 const connectWithRetry = (retries = 5, delay = 5000) => {
   mongoose.connect(process.env.MONGO_URI)
