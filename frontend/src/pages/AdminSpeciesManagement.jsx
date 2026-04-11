@@ -202,7 +202,9 @@ function SpeciesModal({ open, onClose, form, setForm, onSubmit, saving, error, m
               <div>
                 <label style={labelStyle}>Status</label>
                 <select value={form.protectionStatus} onChange={(e) => setForm((prev) => ({ ...prev, protectionStatus: e.target.value }))} style={inputStyle}>
-                  {PROTECTION_STATUSES.map((opt) => <option key={opt}>{opt}</option>)}
+                  {PROTECTION_STATUSES.map((opt) => (
+                    <option key={opt} value={opt} style={{ backgroundColor: '#e5e7eb', color: '#111827' }}>{opt}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -220,14 +222,16 @@ function SpeciesModal({ open, onClose, form, setForm, onSubmit, saving, error, m
                   style={inputStyle}
                 >
                   {BODY_SHAPES.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt} style={{ backgroundColor: '#e5e7eb', color: '#111827' }}>{opt}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label style={labelStyle}>Tail Shape</label>
                 <select value={form.tailShape} onChange={(e) => setForm((prev) => ({ ...prev, tailShape: e.target.value }))} style={inputStyle}>
-                  {TAIL_SHAPES.map((opt) => <option key={opt}>{opt}</option>)}
+                  {TAIL_SHAPES.map((opt) => (
+                    <option key={opt} value={opt} style={{ backgroundColor: '#e5e7eb', color: '#111827' }}>{opt}</option>
+                  ))}
                 </select>
               </div>
             </div>
