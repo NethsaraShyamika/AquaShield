@@ -20,7 +20,7 @@ authRouter.get(
   (req, res) => {
     const user = req.user;
 
-    // ✅ Check if user is blocked
+    
     if (user.isBlocked) {
       return res.redirect(`${FRONTEND_URL}/login?error=blocked`);
     }
