@@ -7,14 +7,13 @@ const authRouter = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "icomputers";
 const FRONTEND_URL = "http://localhost:5173";
 
-// ✅ Step 1 — Redirect to Google
+
 authRouter.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"], session: false })
 );
 
-// ✅ Step 2 — Google callback
-// ✅ Step 2 — Google callback
+
 authRouter.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: `${FRONTEND_URL}/login?error=google_failed` }),
