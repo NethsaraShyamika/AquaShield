@@ -15,6 +15,9 @@ router.post("/", caseController.createCase);
 // READ ALL (Admin Only)
 router.get("/", caseController.getAllCases);
 
+// READ MY CASES (User) — list cases tied to reports owned by the authenticated user
+router.get("/my", caseController.getMyCases);
+
 // READ ONE (Admin OR Owner)
 router.get("/:id", caseController.getCaseById);
 

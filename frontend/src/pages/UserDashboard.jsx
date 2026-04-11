@@ -5,7 +5,7 @@ import EditProfile from "./EditProfile";
 import {
   Fish, Shield, FileText, Search, MapPin, ChevronRight,
   LogOut, User, AlertTriangle, Clock, CheckCircle, X,
-  Home, List, Eye,
+  Home, List, Eye, Scale,
 } from "lucide-react";
 
 // ─── API CONFIG ───────────────────────────────────────────────
@@ -168,7 +168,7 @@ function StageProgress({ stage }) {
 function DashboardHome({
   firstName, isLoading, reportCount, underReviewCount, identifiedSpeciesCount,
   recentReports, protectedSpecies, topMatch, last30DaysIncidents,
-  onOpenComplaintModal, onOpenIdentifyView, onViewMyReports, onViewReportForm,
+  onOpenComplaintModal, onOpenIdentifyView, onViewMyReports, onViewReportForm, onViewMyCases,
   isProfileMenuOpen, onToggleProfileMenu, onViewProfile, onLogout, profileMenuRef,
 }) {
   return (
@@ -195,7 +195,9 @@ function DashboardHome({
               {[
                 { label: "Home",           icon: Home,     action: null,               active: true  },
                 { label: "My Reports",     icon: List,     action: onViewMyReports,    active: false },
-                { label: "Identify Fish",  icon: Eye,      action: onOpenIdentifyView, active: false },
+                { label: "My Cases",       icon: Scale,    action: onViewMyCases,       active: false },
+                { label: "Identify Fish",  icon: Search,      action: onOpenIdentifyView, active: false },
+                
               ].map(({ label, icon: Icon, action, active }) => (
                 <button key={label} type="button" onClick={action}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
@@ -260,6 +262,7 @@ function DashboardHome({
                 className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all">
                 <Fish size={15} /> Identify Species
               </button>
+
             </div>
           </div>
         </section>
@@ -786,6 +789,7 @@ export default function UserDashboard() {
           onOpenIdentifyView={() => setActiveView("identify")}
           onViewMyReports={() => navigate("/my-reports")}
           onViewReportForm={() => navigate("/report-form")}
+          onViewMyCases={() => navigate("/my-cases")}
           isProfileMenuOpen={isProfileMenuOpen}
           onToggleProfileMenu={() => setIsProfileMenuOpen((p) => !p)}
           onViewProfile={() => { setIsProfileMenuOpen(false); setShowEditProfile(true); }}
