@@ -55,14 +55,14 @@ userSchema.pre("save", async function () {
 
     if (this.isAdmin) {
         const lastAdmin = await mongoose.model("User")
-            .findOne({ isAdmin: true })
+            .findOne({ uid: { $regex: /^AID-/ } })
             .sort({ uid: -1 });
         
         const lastNum = lastAdmin ? parseInt(lastAdmin.uid.split("-")[1]) : 0;
         this.uid = `AID-${String(lastNum + 1).padStart(4, "0")}`;
     } else {
         const lastUser = await mongoose.model("User")
-            .findOne({ isAdmin: false })
+            .findOne({ uid: { $regex: /^USR-/ } })
             .sort({ uid: -1 });
         
         const lastNum = lastUser ? parseInt(lastUser.uid.split("-")[1]) : 0;
@@ -73,3 +73,4 @@ userSchema.pre("save", async function () {
 const User = mongoose.model("User", userSchema);
 
 export default User;
+

@@ -1,58 +1,200 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './index.css' // Tailwind directives
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import PageTransition from "./components/PageTransition";
+import "leaflet/dist/leaflet.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+import "./index.css";
+import "./App.css";
 
-  return (
-    <>
-      <section id="center" className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-        <div className="hero flex flex-col items-center gap-4 mb-6">
-          <img src={heroImg} className="w-40 h-40" alt="Hero" />
-          <div className="flex gap-4">
-            <img src={reactLogo} className="w-12 h-12" alt="React logo" />
-            <img src={viteLogo} className="w-12 h-12" alt="Vite logo" />
-          </div>
-        </div>
-        <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold mb-2">Get started</h1>
-          <p className="text-gray-700">
-            Edit <code className="bg-gray-200 px-1 rounded">src/App.jsx</code> and save to test <code className="bg-gray-200 px-1 rounded">HMR</code>
-          </p>
-        </div>
-        <button
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition"
-          onClick={() => setCount(count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+// Pages
+import AboutPage from "./pages/AboutPage";
+import ServicePage from "./pages/ServicePage";
+import ContactPage from "./pages/ContactPage";
+import UserDashboard from "./pages/UserDashboard";
+import MyReports from "./pages/MyReports";
+import MyCases from "./pages/MyCases";
+import ReportForm from "./pages/ReportForm";
+import AuthPage from "./pages/AuthPage";
+import OAuthCallback from "./pages/OAuthCallback";
 
-      <section id="next-steps" className="p-6 bg-white">
-        <div id="docs" className="mb-8">
-          <h2 className="text-2xl font-semibold mb-2">Documentation</h2>
-          <p className="text-gray-600 mb-4">Your questions, answered</p>
-          <ul className="flex gap-4">
-            <li>
-              <a href="https://vite.dev/" target="_blank" className="flex items-center gap-2 hover:text-blue-500">
-                <img className="w-6 h-6" src={viteLogo} alt="Vite" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank" className="flex items-center gap-2 hover:text-blue-500">
-                <img className="w-6 h-6" src={reactLogo} alt="React" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-    </>
-  )
+// Admin
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminSpeciesManagement from "./pages/AdminSpeciesManagement";
+import CaseManagement from "./pages/CaseManagement";
+import AdminReports from "./pages/AdminReports";
+import ManageUsersDashboard from "./pages/ManageUsersDashboard";
+import AdminRoute from "./components/AdminRoute";
+import ReportDetail from "./pages/Report";
+
+function getToken() {
+  return localStorage.getItem("token");
 }
 
-export default App
+function decodeToken(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
+
+function DashboardRedirect() {
+  const token = getToken();
+  const user = decodeToken(token);
+
+  if (!user) return <Navigate replace to="/login" />;
+
+  // ✅ Block check — clear storage and redirect with error
+  if (user.isBlocked) {
+    localStorage.clear();
+    sessionStorage.clear();
+    return <Navigate replace to="/login?error=blocked" />;
+  }
+
+  return user.isAdmin ? (
+    <Navigate replace to="/admin/dashboard" />
+  ) : (
+    <Navigate replace to="/user-dashboard" />
+  );
+}
+
+function UserRoute({ children }) {
+  const token = getToken();
+  const user = decodeToken(token);
+
+  if (!user) return <Navigate replace to="/login" />;
+  if (user.isAdmin) return <Navigate replace to="/admin/dashboard" />;
+
+  // ✅ Block check — clear storage and redirect with error
+  if (user.isBlocked) {
+    localStorage.clear();
+    sessionStorage.clear();
+    return <Navigate replace to="/login?error=blocked" />;
+  }
+
+  return children;
+}
+
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {/* Public */}
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/dashboard" element={<PageTransition><DashboardRedirect /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+        <Route path="/services" element={<PageTransition><ServicePage /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+
+        {/* User */}
+        <Route path="/user-dashboard" element={
+          <UserRoute>
+            <UserDashboard />
+          </UserRoute>
+        } />
+        <Route path="/my-reports" element={
+          <UserRoute>
+            <MyReports />
+          </UserRoute>
+        } />
+        <Route path="/my-cases" element={
+          <UserRoute>
+            <MyCases />
+          </UserRoute>
+        } />
+        <Route path="/report-form" element={
+          <UserRoute>
+            <ReportForm />
+          </UserRoute>
+        } />
+        <Route
+          path="/my-reports/:id"
+          element={
+            <UserRoute>
+              <PageTransition>
+                <ReportDetail />
+              </PageTransition>
+            </UserRoute>
+          }
+        />
+
+        {/* Admin (Protected) */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/oauth-callback"
+          element={<OAuthCallback />}
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <PageTransition>
+                <ManageUsersDashboard />
+              </PageTransition>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/species"
+          element={
+            <AdminRoute>
+              <AdminSpeciesManagement />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminRoute>
+              <AdminReports />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/reports/:id"
+          element={
+            <AdminRoute>
+              <PageTransition>
+                <ReportDetail />
+              </PageTransition>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/cases"
+          element={
+            <AdminRoute>
+              <CaseManagement />
+            </AdminRoute>
+          }
+        />
+
+        {/* Fallback to login */}
+        <Route path="*" element={<Navigate replace to="/login" />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AnimatedRoutes />
+    </Router>
+  );
+}

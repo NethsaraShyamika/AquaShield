@@ -1,0 +1,491 @@
+{
+  "info": {
+    "name": "AquaShield API",
+    "description": "Complete Postman collection for AquaShield REST API.\n\n**Variables:** `baseUrl` (e.g. http://localhost:5000), `token` (JWT — run Login to auto-save), optional `speciesId`, `reportId`, `caseId`, `gbifKey`, `userUid`.\n\n**Auth:** Most protected routes need `Authorization: Bearer {{token}}`. OAuth Google routes are browser redirects — use a browser for full flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "speciesId", "value": "your-species-business-id" },
+    { "key": "reportId", "value": "mongodb-objectid-of-report" },
+    { "key": "caseId", "value": "mongodb-objectid-of-case" },
+    { "key": "gbifKey", "value": "5220138" },
+    { "key": "userUid", "value": "user-uid-for-block-unblock" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET / (health)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (OAuth)",
+      "description": "Google OAuth: open GET /api/auth/google in a browser (not ideal in Postman). Callback: /api/auth/google/callback is used by Google after consent.",
+      "item": [
+        {
+          "name": "GET /api/auth/google (start OAuth — browser)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/google"
+          }
+        },
+        {
+          "name": "GET /api/auth/google/callback (Google redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback?code=&state=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "callback"],
+              "query": [
+                { "key": "code", "value": "" },
+                { "key": "state", "value": "" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "POST /api/users (register)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "POST /api/users/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json && json.token) pm.collectionVariables.set('token', json.token);",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/login"
+          }
+        },
+        {
+          "name": "POST /api/users/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": "{{baseUrl}}/api/users/logout"
+          }
+        },
+        {
+          "name": "GET /api/users/me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "PUT /api/users/me (multipart profile)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "Updated", "type": "text" },
+                { "key": "lastName", "value": "Name", "type": "text" },
+                { "key": "email", "value": "user@example.com", "type": "text", "disabled": true },
+                { "key": "image", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "DELETE /api/users/me",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "POST /api/users/forgot-password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/forgot-password"
+          }
+        },
+        {
+          "name": "POST /api/users/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/reset-password"
+          }
+        },
+        {
+          "name": "GET /api/users (admin — list all)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "GET /api/users/search (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/search?query=test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "search"],
+              "query": [{ "key": "query", "value": "test" }]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/users/block/:id (admin — uid)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/block/{{userUid}}"
+          }
+        },
+        {
+          "name": "PUT /api/users/unblock/:id (admin — uid)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/unblock/{{userUid}}"
+          }
+        },
+        {
+          "name": "GET /api/users/session-test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/session-test"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Species",
+      "item": [
+        {
+          "name": "GET /api/species/gbif/search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/species/gbif/search?q=shark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "species", "gbif", "search"],
+              "query": [{ "key": "q", "value": "shark" }]
+            }
+          }
+        },
+        {
+          "name": "GET /api/species/gbif/:gbifKey",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/species/gbif/{{gbifKey}}"
+          }
+        },
+        {
+          "name": "GET /api/species/find (filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/species/find?bodyShape=&tailShape=&finType=&colorPattern=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "species", "find"],
+              "query": [
+                { "key": "bodyShape", "value": "" },
+                { "key": "tailShape", "value": "" },
+                { "key": "finType", "value": "" },
+                { "key": "colorPattern", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/species (list all)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/species"
+          }
+        },
+        {
+          "name": "GET /api/species/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/species/{{speciesId}}"
+          }
+        },
+        {
+          "name": "GET /api/species/:id/enrich",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/species/{{speciesId}}/enrich"
+          }
+        },
+        {
+          "name": "POST /api/species (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"species-001\",\n  \"name\": \"Example Fish\",\n  \"scientificName\": \"Exampleus piscis\",\n  \"bodyShape\": \"Fusiform\",\n  \"tailShape\": \"Forked\",\n  \"finType\": [\"Dorsal\"],\n  \"colorPattern\": \"Silver\",\n  \"protectionStatus\": \"Protected\",\n  \"isFullyBanned\": false,\n  \"legalMinSizeCm\": 30,\n  \"legalSeason\": \"Closed Jan–Mar\",\n  \"regions\": [\"LK\"],\n  \"image\": \"\",\n  \"description\": \"Sample species record\"\n}"
+            },
+            "url": "{{baseUrl}}/api/species"
+          }
+        },
+        {
+          "name": "PUT /api/species/:id (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": "{{baseUrl}}/api/species/{{speciesId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/species/:id (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/species/{{speciesId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "POST /api/reports (multipart — create)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "incidentType", "value": "Illegal Fishing", "type": "text" },
+                { "key": "description", "value": "Observed near reef.", "type": "text" },
+                { "key": "latitude", "value": "6.9271", "type": "text" },
+                { "key": "longitude", "value": "79.8612", "type": "text" },
+                { "key": "incidentDate", "value": "", "type": "text", "disabled": true },
+                { "key": "speciesInvolved", "value": "[]", "type": "text", "description": "JSON array of ObjectIds or empty []" },
+                { "key": "evidence", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/reports"
+          }
+        },
+        {
+          "name": "GET /api/reports/my",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/reports/my"
+          }
+        },
+        {
+          "name": "GET /api/reports/my/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/reports/my/{{reportId}}"
+          }
+        },
+        {
+          "name": "PUT /api/reports/my/:id (multipart)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "description", "value": "Updated description", "type": "text" },
+                { "key": "incidentType", "value": "Illegal Fishing", "type": "text" },
+                { "key": "latitude", "value": "6.9271", "type": "text" },
+                { "key": "longitude", "value": "79.8612", "type": "text" },
+                { "key": "speciesInvolved", "value": "[]", "type": "text" },
+                { "key": "evidence", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/reports/my/{{reportId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/reports/my/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/reports/my/{{reportId}}"
+          }
+        },
+        {
+          "name": "GET /api/reports (admin — paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports?page=1&limit=10&status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/reports/:id (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/reports/{{reportId}}"
+          }
+        },
+        {
+          "name": "PATCH /api/reports/:id/status (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Under Review\",\n  \"adminNote\": \"Reviewing evidence.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/reports/{{reportId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cases",
+      "item": [
+        {
+          "name": "POST /api/cases (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportId\": \"{{reportId}}\",\n  \"caseNumber\": \"CASE-2026-001\",\n  \"assignedOfficer\": \"Officer Name\",\n  \"status\": \"OPEN\",\n  \"priority\": \"HIGH\",\n  \"notes\": \"Initial case notes\",\n  \"legalAction\": {\n    \"courtName\": \"\",\n    \"courtDate\": null,\n    \"fineAmount\": 0,\n    \"jailDuration\": \"\"\n  },\n  \"evidence\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/cases"
+          }
+        },
+        {
+          "name": "GET /api/cases (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/cases"
+          }
+        },
+        {
+          "name": "GET /api/cases/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/cases/{{caseId}}"
+          }
+        },
+        {
+          "name": "PUT /api/cases/:id (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"UNDER_INVESTIGATION\",\n  \"priority\": \"HIGH\",\n  \"notes\": \"Updated notes\"\n}"
+            },
+            "url": "{{baseUrl}}/api/cases/{{caseId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/cases/:id (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/cases/{{caseId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -63,6 +63,28 @@ export const getAllCases = async (req, res) => {
 };
 
 
+// GET CASES RELATED TO THE CURRENT USER'S REPORTS
+export const getMyCases = async (req, res) => {
+
+  if (!req.user) {
+    return res.status(401).json({ message: "Login required" });
+  }
+
+  try {
+    const cases = await Case.find().populate("reportId");
+
+    const myCases = cases.filter((c) =>
+      c.reportId && (c.reportId.reportedBy || c.reportId.userId) && (c.reportId.reportedBy ? c.reportId.reportedBy.toString() === (req.user._id || req.user.id) : c.reportId.userId.toString() === (req.user._id || req.user.id))
+    );
+
+    res.json({ cases: myCases });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 
 //  Admin → Can View All
@@ -90,8 +112,8 @@ export const getCaseById = async (req, res) => {
 
     // Normal User — Check Report Ownership
     if (
-      caseData.reportId.userId &&
-      caseData.reportId.userId.toString() !== req.user._id
+      (caseData.reportId.reportedBy || caseData.reportId.userId) &&
+      ((caseData.reportId.reportedBy ? caseData.reportId.reportedBy.toString() : caseData.reportId.userId.toString()) !== (req.user._id || req.user.id))
     ) {
       return res.status(403).json({
         message: "You can only view cases related to your reports"
