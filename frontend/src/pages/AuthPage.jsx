@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import LoginForm from "./Login";
 import SignupForm from "./Signup";
 
-// Toast Notification Component
+
 const Toast = ({ message, type, onClose }) => (
   <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-medium animate-slide-in ${type === "success" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-rose-500 to-pink-500"
     }`}>
@@ -13,7 +13,7 @@ const Toast = ({ message, type, onClose }) => (
   </div>
 );
 
-// Loading Spinner
+
 export const LoadingSpinner = () => (
   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -21,7 +21,7 @@ export const LoadingSpinner = () => (
   </svg>
 );
 
-// Reusable Input
+
 export const InputField = ({ label, type = "text", placeholder, value, onChange, error, children }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-xs font-semibold uppercase tracking-widest text-cyan-300/80">{label}</label>
@@ -40,7 +40,7 @@ export const InputField = ({ label, type = "text", placeholder, value, onChange,
   </div>
 );
 
-// Ocean Background
+
 const OceanBackground = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     {/* Base ocean gradient */}
@@ -131,8 +131,23 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Check if user is already logged in
+
+
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get("error");
+
+    if (oauthError === "blocked") {
+      // ✅ Show as toast so it's always visible
+      showToast("Your account has been blocked by an administrator.", "error");
+      window.history.replaceState({}, "", "/login");
+      return;
+    } else if (oauthError === "google_failed") {
+      showToast("Google sign in failed. Please try again.", "error");
+      window.history.replaceState({}, "", "/login");
+      return;
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/dashboard');
@@ -148,31 +163,22 @@ export default function AuthPage() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // ✅ Store token if backend returns one
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
+      // ✅ Always show generic message for any login failure
+      if (!res.ok) throw new Error("Invalid credentials");  // ← change this line
 
-      // ✅ Store user info
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      if (data.token) localStorage.setItem('token', data.token);
+      if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
 
       showToast("Welcome back! Login successful 🌊", "success");
-
-      // ✅ Redirect to dashboard
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      setTimeout(() => navigate('/dashboard'), 1000);
 
     } catch (err) {
       setError(err.message);
@@ -198,19 +204,19 @@ export default function AuthPage() {
 
       if (!res.ok) throw new Error(data.message || "Signup failed");
 
-      // ✅ Store token if backend returns one
+      
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
 
-      // ✅ Store user info
+   
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
 
       showToast("Account created! Redirecting to dashboard 🌊", "success");
+
       
-      // ✅ Redirect to dashboard
       setTimeout(() => {
         navigate('/dashboard');
       }, 1000);
@@ -225,21 +231,21 @@ export default function AuthPage() {
 
   const navLinks = ["Home", "About", "Services", "Contact"];
 
-  // Left side content changes based on form
+  
   const leftContent = {
     login: {
       greeting: "Welcome Back",
       title: "Dive Back In",
       subtitle: "The ocean needs its guardians. Sign in to continue protecting our marine ecosystems and report illegal fishing activities.",
       cta: "New here?",
-      ctaAction: "Create an account →",
+      ctaAction: "Create an account",
     },
     signup: {
       greeting: "Join Us Today",
       title: "Become a Guardian",
       subtitle: "Every report makes a difference. Join thousands of ocean guardians fighting illegal fishing and protecting endangered marine species.",
       cta: "Already a member?",
-      ctaAction: "Sign in instead →",
+      ctaAction: "Sign in instead",
     },
   };
 

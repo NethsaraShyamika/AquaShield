@@ -241,17 +241,17 @@ function DashboardHome({
         </header>
 
         {/* ── HERO ────────────────────────────────────────── */}
-        <section className="max-w-[1180px] mx-auto px-6 pt-10 pb-8 w-full">
-          <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-8 py-8 shadow-xl">
+        <section className="max-w-[1180px] mx-auto px-6 pt-10 pb-8 w-full ">
+          <div className="bg-white/5 backdrop-blur-[14px] border border-white/20 rounded-3xl px-8 py-8 shadow-xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] border border-white/10 bg-white/5 text-cyan-400 mb-4">
-              <Shield size={12} /> AquaShield
+              <Shield size={20} /> AquaShield
             </div>
-            <p className="text-cyan-400/70 text-sm font-semibold mb-1">Good morning, {firstName}</p>
+            <h1 className="text-cyan-400/70 text-sm font-semibold mb-1">Good morning, {firstName}</h1>
             <h1 className="text-[32px] font-extrabold tracking-tight text-white leading-tight mb-2">
               Protect Sri Lanka's Ocean Species
             </h1>
             <p className="text-white/40 text-sm mb-6">Report illegal fishing or identify a species in seconds.</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap flex-col sm:flex-row items-center justify-center gap-8">
               <button type="button" onClick={onViewReportForm}
                 className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(6,182,212,0.30)] hover:brightness-105 transition-all">
                 <FileText size={15} /> Create Report
@@ -592,7 +592,7 @@ export default function UserDashboard() {
   const [showEditProfile, setShowEditProfile]         = useState(false);
   const profileMenuRef = useRef(null);
 
-  const token       = useMemo(() => tokenFromStorage(), []);
+  const [token, setToken] = useState(() => tokenFromStorage());
   const userPayload = useMemo(() => decodeJwtPayload(token), [token]);
   const firstName   = userPayload?.firstName || "Fisher";
 
@@ -752,7 +752,11 @@ export default function UserDashboard() {
     <main>
       {/* EditProfile Modal */}
       {showEditProfile && (
-        <EditProfile onClose={() => setShowEditProfile(false)} onUpdated={(u) => { console.log("Profile updated:", u); setShowEditProfile(false); }} />
+        <EditProfile onClose={() => setShowEditProfile(false)} onUpdated={(u) => { 
+          console.log("Profile updated:", u); 
+          setToken(tokenFromStorage()); 
+          setShowEditProfile(false); 
+        }} />
       )}
 
       {/* Banners */}

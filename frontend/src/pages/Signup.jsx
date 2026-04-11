@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { InputField, LoadingSpinner } from "./AuthPage";
 
-/**
- * SignupForm Component
- * Props:
- * - onSubmit: function(formData) - handles signup submission
- * - isLoading: boolean - shows loading state
- * - error: string - error message from parent
- */
+
 export default function SignupForm({ onSubmit, isLoading, error }) {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -20,7 +14,7 @@ export default function SignupForm({ onSubmit, isLoading, error }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Password strength checker
+ 
   const getPasswordStrength = (password) => {
     if (!password) return { score: 0, label: "", color: "" };
     let score = 0;
@@ -42,7 +36,7 @@ export default function SignupForm({ onSubmit, isLoading, error }) {
 
   const strength = getPasswordStrength(formData.password);
 
-  // Validation
+ 
   const validate = () => {
     const newErrors = {};
     if (!formData.firstName) newErrors.firstName = "First name is required";
@@ -183,7 +177,7 @@ export default function SignupForm({ onSubmit, isLoading, error }) {
             <span>Creating account...</span>
           </>
         ) : (
-          <span>Create Account →</span>
+          <span>Create Account </span>
         )}
       </button>
 
