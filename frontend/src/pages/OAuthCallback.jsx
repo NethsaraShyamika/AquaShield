@@ -9,6 +9,12 @@ export default function OAuthCallback() {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
 
+    if (error === "blocked") {
+      // ✅ Redirect to login with blocked message
+      navigate("/login?error=blocked");
+      return;
+    }
+
     if (error) {
       navigate("/login?error=google_failed");
       return;

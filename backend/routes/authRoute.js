@@ -14,11 +14,17 @@ authRouter.get(
 );
 
 // ✅ Step 2 — Google callback
+// ✅ Step 2 — Google callback
 authRouter.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: `${FRONTEND_URL}/login?error=google_failed` }),
   (req, res) => {
     const user = req.user;
+
+    // ✅ Check if user is blocked
+    if (user.isBlocked) {
+      return res.redirect(`${FRONTEND_URL}/login?error=blocked`);
+    }
 
     const payload = {
       id: user._id,
@@ -32,8 +38,6 @@ authRouter.get(
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "48h" });
-
-    // ✅ Redirect to frontend with token in URL
     res.redirect(`${FRONTEND_URL}/oauth-callback?token=${token}`);
   }
 );

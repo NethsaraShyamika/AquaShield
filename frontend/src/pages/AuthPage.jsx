@@ -131,8 +131,24 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+
   // ✅ Check if user is already logged in
+  // ✅ Single combined useEffect — handles both OAuth errors AND token check
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get("error");
+
+    if (oauthError === "blocked") {
+      // ✅ Show as toast so it's always visible
+      showToast("Your account has been blocked by an administrator.", "error");
+      window.history.replaceState({}, "", "/login");
+      return;
+    } else if (oauthError === "google_failed") {
+      showToast("Google sign in failed. Please try again.", "error");
+      window.history.replaceState({}, "", "/login");
+      return;
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/dashboard');

@@ -20,12 +20,20 @@ describe("Case API", () => {
   });
 
   it("should create a case (admin only)", async () => {
-    const reportRes = await request(app).post("/api/reports").send({
-      incidentType: "Illegal Net Fishing",
-      description: "Report for case creation test",
-      latitude: 6.9271,
-      longitude: 79.8612,
-    });
+    const adminToken = jwt.sign(
+      { _id: "507f1f77bcf86cd799439011", isAdmin: true },
+      process.env.JWT_SECRET || "icomputers"
+    );
+
+    const reportRes = await request(app)
+      .post("/api/reports")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        incidentType: "Illegal Net Fishing",
+        description: "Report for case creation test",
+        latitude: 6.9271,
+        longitude: 79.8612,
+      });
 
     expect(reportRes.statusCode).toBe(201);
 
@@ -53,8 +61,8 @@ describe("Case API", () => {
 
   it("should reject case creation for non-admin users", async () => {
     const token = jwt.sign(
-      { _id: "user-id", isAdmin: false },
-      process.env.JWT_SECRET || "icomputers",
+      { _id: "507f1f77bcf86cd799439012", isAdmin: false },
+      process.env.JWT_SECRET || "icomputers"
     );
 
     const res = await request(app)

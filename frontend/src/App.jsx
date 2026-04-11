@@ -21,7 +21,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminSpeciesManagement from "./pages/AdminSpeciesManagement";
 import CaseManagement from "./pages/CaseManagement";
 import AdminReports from "./pages/AdminReports";
-import ManageUsersDashboard from "./pages/ManageUsersDashboard"; // ✅ ADD THIS IMPORT
+import ManageUsersDashboard from "./pages/ManageUsersDashboard";
 import AdminRoute from "./components/AdminRoute";
 
 function getToken() {
@@ -41,6 +41,14 @@ function DashboardRedirect() {
   const user = decodeToken(token);
 
   if (!user) return <Navigate replace to="/login" />;
+
+  // ✅ Block check — clear storage and redirect with error
+  if (user.isBlocked) {
+    localStorage.clear();
+    sessionStorage.clear();
+    return <Navigate replace to="/login?error=blocked" />;
+  }
+
   return user.isAdmin ? (
     <Navigate replace to="/admin/dashboard" />
   ) : (
@@ -54,6 +62,13 @@ function UserRoute({ children }) {
 
   if (!user) return <Navigate replace to="/login" />;
   if (user.isAdmin) return <Navigate replace to="/admin/dashboard" />;
+
+  // ✅ Block check — clear storage and redirect with error
+  if (user.isBlocked) {
+    localStorage.clear();
+    sessionStorage.clear();
+    return <Navigate replace to="/login?error=blocked" />;
+  }
 
   return children;
 }
@@ -101,13 +116,9 @@ function AnimatedRoutes() {
 
         <Route
           path="/oauth-callback"
-          element={<OAuthCallback />
-
-          }
+          element={<OAuthCallback />}
         />
 
-
-        {/* ✅ FIXED: Single User Management Route - PROPERLY PROTECTED */}
         <Route
           path="/admin/users"
           element={
