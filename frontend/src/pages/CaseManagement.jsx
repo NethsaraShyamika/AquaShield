@@ -1,4 +1,5 @@
-// CaseManagement.jsx — AquaShield Admin Panel
+// CaseManagement.jsx — AquaShield Admin Panel.
+// Manages user cases displays, filters, paginates, and handles create/read/update/delete actions.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
