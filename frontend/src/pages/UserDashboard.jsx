@@ -706,7 +706,6 @@ export default function UserDashboard() {
     document.cookie.split(";").forEach((c) => { const n = c.indexOf("=") > -1 ? c.slice(0, c.indexOf("=")).trim() : c.trim(); if (n) document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`; });
     fetch(`${API_BASE_URL}/users/logout`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: "include", keepalive: true }).catch(() => {});
     navigate("/login", { replace: true });
-    window.location.replace("/login");
   };
 
   const updateComplaintField    = (field, value) => setComplaintForm((p) => ({ ...p, [field]: value }));
